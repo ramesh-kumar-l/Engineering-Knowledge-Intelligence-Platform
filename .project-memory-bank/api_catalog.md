@@ -21,10 +21,13 @@ catalog.
 
 | Method + Path | Auth | Request | Response | Owning module | Status |
 |---|---|---|---|---|---|
-| `GET /health` | none | — | `{ "status": "ok", "version": str }` | core | planned |
+| `GET /health` | none | — | `HealthResponse` `{ status, version }` | api/routes/health | implemented |
+| `GET /health/ready` | none | — | `ReadinessResponse` `{ status, version, dependencies[] }` | api/routes/health | implemented |
 
-> `GET /health` is the first endpoint of the Phase 0 code walking-skeleton — a
-> liveness/readiness probe used to prove the stack end-to-end and by observability.
+> `GET /health` is liveness (process up, no I/O). `GET /health/ready` is readiness:
+> it aggregates PostgreSQL/Neo4j/Qdrant health and returns **503** when any store is
+> degraded so orchestrators hold traffic. Schemas live in `apps/api/app/domain/
+> schemas.py` and are mirrored as TypeScript in `packages/contracts` (R2 mitigation).
 
 Phase 1+ will add connector, sync, processing, graph, retrieval, trust, assistant,
 intelligence, and agent endpoints — each added here when implemented.

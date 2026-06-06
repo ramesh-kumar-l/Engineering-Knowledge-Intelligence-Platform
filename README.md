@@ -24,9 +24,9 @@ It is designed to eventually answer, with visible trust:
 
 | | |
 |---|---|
-| **Current phase** | Phase 0 — Project Foundation |
-| **Current increment** | Documentation only (memory bank) — **no application code yet** |
-| **Next increment** | Phase 0 code walking-skeleton (awaiting approval) |
+| **Current phase** | Phase 0 — Project Foundation (code-complete, at phase gate) |
+| **Delivered** | Memory bank + ADRs, **and** the code walking-skeleton (API + Web + infra + CI) |
+| **Next phase** | Phase 1 — Knowledge Ingestion Layer (awaiting gate approval) |
 
 The authoritative, always-current status lives in
 [`.project-memory-bank/implementation_status.md`](.project-memory-bank/implementation_status.md).
@@ -38,8 +38,9 @@ This project follows a **Memory Bank First** discipline. The
 truth. Before any work, read in order:
 
 1. [`implementation_status.md`](.project-memory-bank/implementation_status.md)
-2. [`roadmap.md`](.project-memory-bank/roadmap.md)
-3. [`architecture_decisions.md`](.project-memory-bank/architecture_decisions.md)
+2. [`active-context.md`](.project-memory-bank/active-context.md)
+3. [`roadmap.md`](.project-memory-bank/roadmap.md)
+4. [`architecture_decisions.md`](.project-memory-bank/architecture_decisions.md)
 
 ## Technology stack (decided)
 
@@ -51,19 +52,27 @@ truth. Before any work, read in order:
 | Knowledge graph | Neo4j | ADR-0004 |
 | Vector store | Qdrant | ADR-0004 |
 
-## Intended repository layout
-
-> Documented now; created in the upcoming code increment.
+## Repository layout
 
 ```
 .
 ├── apps/
-│   ├── api/                 # FastAPI backend services
-│   └── web/                 # Next.js frontend
-├── packages/                # Shared libraries (types, clients, design tokens)
-├── infra/                   # IaC, docker-compose, CI/CD config
+│   ├── api/                 # FastAPI backend (health/readiness, RBAC + audit scaffold)
+│   └── web/                 # Next.js frontend (dark-mode App Shell + Overview)
+├── packages/
+│   └── contracts/           # Shared TS API contract types (mirror Pydantic schemas)
+├── infra/                   # docker-compose: PostgreSQL + Neo4j + Qdrant
+├── .github/workflows/       # CI: api · web · security scanning
 ├── .project-memory-bank/    # Source of truth (docs)
 └── README.md
+```
+
+## Run locally
+
+```bash
+docker compose -f infra/docker-compose.yml up -d   # datastores
+cd apps/api && pip install -e ".[dev]" && uvicorn app.main:app --reload   # API :8000
+cd apps/web && npm install && npm run dev                                 # Web :3000
 ```
 
 ## License

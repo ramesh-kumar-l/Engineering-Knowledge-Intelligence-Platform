@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design tokens (ui_design_system.md). Dark mode is the default token set; the
+ * :root values ARE the dark theme. .light overrides for light mode. HSL channels
+ * so Tailwind can compose opacity (shadcn/ui-compatible token shape).
+ */
+:root {
+  --background: 222 18% 9%;
+  --foreground: 210 20% 96%;
+  --card: 222 16% 12%;
+  --muted: 222 12% 18%;
+  --muted-foreground: 215 14% 64%;
+  --border: 222 12% 20%;
+  --primary: 217 91% 60%;
+  --success: 142 70% 45%;
+  --danger: 0 72% 58%;
+  --radius: 0.625rem;
+}
+
+.light {
+  --background: 0 0% 100%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --muted: 210 16% 95%;
+  --muted-foreground: 215 16% 40%;
+  --border: 214 20% 88%;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  -webkit-font-smoothing: antialiased;
+}

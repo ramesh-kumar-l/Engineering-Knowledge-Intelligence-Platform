@@ -126,3 +126,31 @@ management. Details in [`security_requirements.md`](security_requirements.md).
 
 **Consequences.** Slightly more upfront design; avoids costly rework and earns trust.
 Enforced as acceptance criteria in every code increment.
+
+---
+
+## ADR-0007 — Monorepo tooling & dependency management
+
+**Status:** Accepted · 2026-06-06
+
+**Context.** ADR-0005 chose a monorepo but deferred tooling. The Phase 0 code
+walking-skeleton needs a concrete, low-ceremony toolchain that does not over-engineer
+a two-app repo.
+
+**Options.** Heavy orchestrator (Nx/Turborepo + workspaces) now · Per-app native
+tooling (pip/PEP 621 for Python, npm for web) with a thin shared types package · Defer
+again.
+
+**Decision.** Per-app native tooling for now:
+- **API:** PEP 621 `pyproject.toml` (hatchling), installable via `pip`/`uv`; `ruff`,
+  `mypy`, `pytest`.
+- **Web:** `npm` + Next.js scripts; ESLint, `tsc`, `next build`.
+- **Shared contracts:** `packages/contracts` is a **type-only** TS package consumed via
+  a tsconfig path alias + `transpilePackages` — no build step, no workspace installer
+  required. Python schemas are the authoritative source; TS types mirror them.
+- CI runs each app's gates independently ([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)).
+
+**Consequences.** Minimal moving parts and fast onboarding (simplicity first). No
+cross-app task caching/orchestration yet; if build coordination becomes painful we
+revisit with Turborepo/uv workspaces (superseding ADR). Contract parity between Python
+and TS is maintained by convention + review until a generator is introduced.

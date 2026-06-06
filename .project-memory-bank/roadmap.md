@@ -15,10 +15,14 @@ security baseline, design system.
 
 Increments:
 - ✅ **Docs increment** — memory bank + foundational ADRs + standards (this set).
-- ⬜ **Code walking-skeleton** — monorepo scaffold, FastAPI `GET /health`, Next.js
-  shell, CI, baseline tests, security scaffolding.
+- ✅ **Code walking-skeleton** — monorepo (`apps/api`, `apps/web`, `packages/`,
+  `infra/`), FastAPI `GET /health` + `/health/ready` (checks PG/Neo4j/Qdrant),
+  Next.js dark-mode App Shell + Overview consuming the API, docker-compose for the
+  three stores, CI (ruff/mypy/pytest · lint/typecheck/build · secret+dependency
+  scan), security scaffolding (RBAC roles + `require_role`, audit middleware,
+  request correlation, env-based secrets). All quality gates green.
 
-**Phase gate after the code increment.**
+**🚦 Phase gate — awaiting approval to proceed to Phase 1.**
 
 ---
 

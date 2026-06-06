@@ -1,0 +1,11 @@
+{
+  "name": "@ekip/contracts",
+  "version": "0.1.0",
+  "description": "Shared API contract types (TypeScript) — mirror of apps/api Pydantic schemas.",
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

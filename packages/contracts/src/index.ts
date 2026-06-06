@@ -1,0 +1,8 @@
+/**
+ * EKIP shared API contracts.
+ *
+ * These TypeScript types MUST stay in sync with the Pydantic schemas in
+ * `apps/api/app/domain/schemas.py`. Keeping one shared definition is the R2
+ * mitigation from implementation_status.md (preventing Python/TS contract drift).
+ */
+export type * from "./health";

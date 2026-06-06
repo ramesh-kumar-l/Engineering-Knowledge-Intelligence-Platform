@@ -1,0 +1,54 @@
+# Local development datastores (ADR-0004). Brings up the three stores the API's
+# readiness probe checks: PostgreSQL, Neo4j, Qdrant.
+#
+#   docker compose -f infra/docker-compose.yml up -d
+#
+# Credentials here are DEV ONLY and must never be reused in staging/production
+# (security_requirements.md: secrets via secret store, not committed files).
+
+name: ekip
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ekip
+      POSTGRES_PASSWORD: ekip
+      POSTGRES_DB: ekip
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ekip"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  neo4j:
+    image: neo4j:5-community
+    environment:
+      NEO4J_AUTH: neo4j/ekip-dev-password
+    ports:
+      - "7474:7474" # browser
+      - "7687:7687" # bolt
+    volumes:
+      - neo4jdata:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333" # http
+      - "6334:6334" # grpc
+    volumes:
+      - qdrantdata:/qdrant/storage
+
+volumes:
+  pgdata:
+  neo4jdata:
+  qdrantdata:

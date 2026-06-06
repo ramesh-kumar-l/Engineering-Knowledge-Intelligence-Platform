@@ -1,12 +1,13 @@
 # Screen Inventory
 
 Every screen serves a documented journey ([`user_journeys.md`](user_journeys.md)).
-Status: ⬜ planned · 🟡 in progress · ✅ shipped. All screens are currently **planned**
-(no UI code yet). Design language: [`ui_design_system.md`](ui_design_system.md).
+Status: ⬜ planned · 🟡 in progress · ✅ shipped.
+Design language: [`ui_design_system.md`](ui_design_system.md).
 
 | Screen | Phase | Serves journey | Status |
 |---|---|---|---|
-| App Shell (nav, theme, layout) | 0 (code) | foundation for all | ⬜ |
+| App Shell (nav, theme, layout) | 0 (code) | foundation for all | ✅ |
+| Overview (system status) | 0 (code) | foundation for all | ✅ |
 | Connector Catalog | 1 | J7 | ⬜ |
 | Connector Details | 1 | J7 | ⬜ |
 | Sync Dashboard | 1 | J7 | ⬜ |
