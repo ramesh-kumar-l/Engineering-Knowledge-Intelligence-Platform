@@ -35,9 +35,9 @@ Design language: [`ui_design_system.md`](ui_design_system.md).
 | Intelligence Dashboard | 7 | J5 | ✅ |
 | Technical Debt Dashboard | 7 | J5 | ✅ |
 | Dependency Risk Dashboard | 7 | J5 | ✅ |
-| Agent Workspace | 8 | (agent ops) | ⬜ |
-| Agent Execution Viewer | 8 | (agent ops) | ⬜ |
-| Agent Audit Trail | 8 | (agent ops, audit) | ⬜ |
+| Agent Workspace | 8 | (agent ops) | ✅ |
+| Agent Execution Viewer | 8 | (agent ops) | ✅ |
+| Agent Audit Trail | 8 | (agent ops, audit) | ✅ |
 
 > Rule: do not add a screen here without a journey it serves. "ops" screens support
 > operating the platform itself and trace back to keeping journeys reliable.

@@ -1,4 +1,6 @@
 import type {
+  AgentStepStatus,
+  AgentType,
   AssistantIntent,
   ConfidenceBand,
   ConnectorStatus,
@@ -127,6 +129,27 @@ export function debtReasonLabel(reason: string): string {
 
 export function formatPercent(ratio: number): string {
   return `${Math.round(ratio * 100)}%`;
+}
+
+const AGENT_TYPE_LABEL: Record<AgentType, string> = {
+  incident: "Incident Agent",
+  onboarding: "Onboarding Agent",
+  architecture: "Architecture Agent",
+  maintenance: "Knowledge Maintenance Agent",
+};
+
+export function agentTypeLabel(type: AgentType): string {
+  return AGENT_TYPE_LABEL[type];
+}
+
+const STEP_STATUS_TONE: Record<AgentStepStatus, Tone> = {
+  ok: "success",
+  empty: "muted",
+  failed: "danger",
+};
+
+export function stepStatusTone(status: AgentStepStatus): Tone {
+  return STEP_STATUS_TONE[status];
 }
 
 export function formatDate(iso: string | null): string {

@@ -254,17 +254,43 @@ severity weights, a cached/materialized intelligence read model for large corpor
 multi-hop dependency reasoning and trend/time-series intelligence, and richer ownership
 inputs (CODEOWNERS / team inheritance, carried from ADR-0018).
 
-**🚦 Phase gate — awaiting approval to proceed to Phase 8.**
+**🚦 Phase gate — approved; Phase 8 delivered below.**
 
 ---
 
-## Phase 8 — Agent Layer ⬜
+## Phase 8 — Agent Layer ✅
 
 Capabilities: incident agents, onboarding agents, architecture agents, knowledge
 maintenance agents.
 UI: Agent Workspace, Agent Execution Viewer, Agent Audit Trail.
 
-**STOP — wait for approval.**
+Delivered:
+- ✅ **Deterministic agents** — ``app/agents/`` composes retrieval (Phase 4), the graph
+  (Phase 3), trust (Phase 5) and intelligence (Phase 7), no model provider (ADR-0021);
+  one pure fixed-plan planner per agent: ``incident`` (impact + resolution + owners),
+  ``onboarding`` (sources + owners + dependency profile), ``architecture`` (decisions +
+  cycles + high-risk components + stale-doc risk), ``maintenance`` (corpus knowledge
+  debt + orphaned components). A shared ``compose`` helper builds trust-carrying evidence,
+  a ``catalog`` describes the agents, and ``serialize`` snapshots the result.
+- ✅ **Orchestration + persistence** — ``AgentService`` runs the selected planner over an
+  ``AgentContext`` and persists the run: each step → an ``AgentStep`` row (the trace) and
+  the conclusions → a JSON snapshot on the ``AgentRun`` (the audit record). Overall
+  confidence is the mean of cited trust, so **every result carries trust**. Planner
+  failures are captured (ADR-0009), never raised.
+- ✅ **APIs** — `GET /agents/catalog`, `POST /agents/runs` (audited), `GET /agents/runs`,
+  `GET /agents/runs/{id}` (api_catalog.md); VIEWER, tenant-scoped.
+- ✅ **UI** — Agent Workspace (launchers + recent runs), Agent Execution Viewer (headline,
+  findings, prioritized actions, trust-carrying evidence, execution trace), Agent Audit
+  Trail (all runs). "Agents" enabled in nav.
+- ✅ **Tests** — **175 passing** (+15: four planners, service orchestration/persistence/
+  tenant isolation, routes auth/catalog/run round-trip/404/tenant); ruff · mypy strict
+  (138 files) · pytest green; web lint/tsc/build green.
+
+Deferred to later (tracked in implementation_status.md): an LLM-backed planner/tool-use
+upgrade behind ``AgentService``, multi-hop reasoning, scheduled/triggered agent runs and a
+background worker, and agent-quality evaluation.
+
+**🚦 Phase gate — Phase 8 complete; all roadmap phases (0–8) delivered.**
 
 ---
 

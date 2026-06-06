@@ -2,12 +2,12 @@
 
 > **Read this first.** Live state of the project. Updated after every task.
 
-**Last updated:** 2026-06-06 (Phase 7)
+**Last updated:** 2026-06-06 (Phase 8)
 
 ## Current phase
 
-**Phase 7 — Engineering Intelligence.** Complete and verified; **at the phase gate**
-awaiting approval to start Phase 8. Phases 0–6 are done.
+**Phase 8 — Agent Layer.** Complete and verified. **All roadmap phases (0–8) are
+delivered.** Phases 0–7 are done.
 
 ## Completed work
 
@@ -184,6 +184,37 @@ encryption + persisted audit (ADR-0008/0009), and the four ingestion screens.
   over SQLite + in-memory graph, routes RBAC/shape/tenant. Gates: ruff · mypy strict
   (123 files) · pytest 160/160; web lint/tsc/build green.
 
+### Phase 8 — Agent Layer ✅
+
+- **Deterministic agents (`app/agents/`):** one pure fixed-plan planner per agent
+  composing retrieval + graph + trust + intelligence, no model provider (ADR-0021):
+  `incident_agent` (incident impact + resolution + owners to involve), `onboarding_agent`
+  (sources to read + owners + dependency profile), `architecture_agent` (decisions on
+  record + circular dependencies + high-risk components + stale-doc risk),
+  `maintenance_agent` (corpus knowledge debt + orphaned components, no target). Shared
+  pieces: `base.py` (frozen `AgentReport`/`AgentFinding`/`AgentAction`/`AgentEvidence`/
+  `AgentStepResult`), `context.py` (`AgentContext` over the four layers), `compose.py`
+  (trust-carrying evidence gathering, owner lookup, confidence aggregation), `catalog.py`
+  (agent metadata), `serialize.py` (result snapshot). New `AgentType` + `AgentStepStatus`
+  enums.
+- **Orchestration (`app/agents/agent_service.py`):** dispatches to the planner, then
+  persists the run — each step → an `AgentStep` row (trace), conclusions → a JSON snapshot
+  on `AgentRun` (audit record). Overall confidence = mean of cited trust. Planner failures
+  captured as a failed step + failed run (ADR-0009), never raised.
+- **Persistence:** `AgentRun` + `AgentStep` (`app/models/agent.py`, PostgreSQL; run reuses
+  `SyncStatus`). `AgentRepository` (create_run/add_step/finish_run/get/list_recent/
+  list_steps), tenant-scoped.
+- **APIs (`routes/agents.py`):** `GET /agents/catalog`, `POST /agents/runs` (audited as
+  `agent.run`), `GET /agents/runs`, `GET /agents/runs/{id}` — VIEWER, tenant-scoped.
+- **Web (`apps/web/app/agents`):** Agent Workspace (per-agent launchers + recent runs),
+  Agent Execution Viewer (headline, findings, prioritized actions, trust-carrying
+  evidence linked to the Trust Inspector, execution trace), Agent Audit Trail (all runs).
+  "Agents" enabled in nav.
+- **Contracts:** TS mirror `agents.ts`.
+- **Tests:** **175 passing** (+15): four planners over SQLite + in-memory graph, service
+  orchestration/persistence/tenant isolation, routes auth/catalog/run round-trip/404/
+  tenant. Gates: ruff · mypy strict (138 files) · pytest 175/175; web lint/tsc/build green.
+
 ## Current architecture state
 
 End-to-end now spans ingestion → processing → knowledge graph: UI → API (JWT/RBAC,
@@ -199,7 +230,11 @@ composing retrieval + graph + trust deterministically into evidence-backed answe
 persisting conversations (PostgreSQL) for history + evidence review. The **Engineering
 Intelligence** layer then reads the graph + trust on demand to produce dependency-risk,
 technical-debt, incident and ownership reports (deterministic, nothing persisted) behind
-the Intelligence / Technical Debt / Dependency Risk dashboards.
+the Intelligence / Technical Debt / Dependency Risk dashboards. Finally, the **Agent
+Layer** composes all of the above into deterministic, fixed-plan agents (incident /
+onboarding / architecture / maintenance) and **persists each run + step trace + result
+snapshot** (PostgreSQL) for the Agent Execution Viewer and Audit Trail — the first layer
+that writes back, but still over the existing three datastores with no model provider.
 
 ## Risks
 
@@ -251,6 +286,12 @@ the Intelligence / Technical Debt / Dependency Risk dashboards.
   multi-hop transitive impact; there is no trend/time-series intelligence yet. Dependency
   and ownership coverage are only as complete as graph curation (`depends_on` + team
   ownership must be declared/projected).
+- **Heuristic agents (ADR-0021).** Agents are fixed-plan planners with templated phrasing
+  (no LLM planning or tool use); they inherit every upstream heuristic (retrieval, graph
+  curation, trust, single-edge intelligence). Runs are synchronous in-request (bounded),
+  with no scheduling/triggers or background worker; there is no agent-quality eval harness.
+  All are seams for an LLM-backed planner behind `AgentService` (the persistence + audit
+  contract stays fixed).
 - Carried from Phase 1: single implemented connector (GitHub); no Alembic migrations
   (dev `create_all`, tests SQLite); auth is HS256 shared-secret (JWKS/SSO login UI
   pending); default dev secrets MUST be overridden in prod.
@@ -269,13 +310,18 @@ the Intelligence / Technical Debt / Dependency Risk dashboards.
 - Intelligence calibration (ADR-0020): when to move from fixed heuristic risk/severity
   weights to learned/calibrated scoring, whether to materialize/cache the intelligence
   read model, and when to add multi-hop dependency impact + trend (time-series) analysis.
+- Agent upgrade path (ADR-0021): when to introduce an LLM-backed planner / tool-use
+  runtime behind `AgentService`, scheduled/event-triggered agent runs (+ a background
+  worker), and an agent-quality evaluation harness.
 
 ## Recommended next action
 
-Obtain phase-gate approval, then begin **Phase 8 — Agent Layer** (incident agents,
-onboarding agents, architecture agents, knowledge-maintenance agents) over the
-intelligence + assistant + graph + trust layers, with Agent Workspace / Agent Execution
-Viewer / Agent Audit Trail screens.
+All eight roadmap phases (0–8) are delivered. The natural next investments are the
+cross-cutting **production-hardening** items already tracked as debt rather than a new
+phase: the remaining 5 connectors, Alembic migrations, OAuth/OIDC + SSO login UI, a
+background worker for the sync/processing/build/embedding/agent run paths, and the
+LLM-backed upgrades (processing, embeddings, assistant, intelligence, agents) behind their
+existing seams. Each should be scoped + ADR'd before implementation.
 
-> **Phase gate:** Phase 7 is complete and verified; **STOP for approval** before
-> Phase 8.
+> **Phase gate:** Phase 8 is complete and verified; **all roadmap phases (0–8) are
+> delivered.** STOP for approval/direction before starting any hardening workstream.

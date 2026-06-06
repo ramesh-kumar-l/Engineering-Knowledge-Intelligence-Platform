@@ -1,4 +1,10 @@
 import type {
+  AgentCatalogResponse,
+  AgentRunDetailResponse,
+  AgentRunListResponse,
+  AgentRunSummary,
+  AgentType,
+  AgentTypeInfo,
   AskResponse,
   ChunkStatsResponse,
   Connector,
@@ -379,4 +385,30 @@ export async function fetchIncidentIntel(): Promise<IncidentReportResponse | nul
 
 export async function fetchOwnershipIntel(): Promise<OwnershipReportResponse | null> {
   return getJson<OwnershipReportResponse>("/intelligence/ownership");
+}
+
+// --- Phase 8: Agent Layer ---
+
+export async function fetchAgentCatalog(): Promise<AgentTypeInfo[]> {
+  return (await getJson<AgentCatalogResponse>("/agents/catalog"))?.agents ?? [];
+}
+
+export async function runAgent(
+  agentType: AgentType,
+  target?: string,
+): Promise<AgentRunDetailResponse | null> {
+  return postJsonFor<AgentRunDetailResponse>("/agents/runs", {
+    agent_type: agentType,
+    target: target ?? null,
+  });
+}
+
+export async function fetchAgentRuns(): Promise<AgentRunSummary[]> {
+  return (await getJson<AgentRunListResponse>("/agents/runs"))?.runs ?? [];
+}
+
+export async function fetchAgentRun(
+  id: string,
+): Promise<AgentRunDetailResponse | null> {
+  return getJson<AgentRunDetailResponse>(`/agents/runs/${id}`);
 }

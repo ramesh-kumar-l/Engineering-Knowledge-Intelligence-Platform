@@ -501,3 +501,47 @@ seams for later learned/calibrated scoring, and analysis is bounded to a single 
 (no caching/materialization yet) — a scale upgrade behind the service seam. Ownership and
 dependency intelligence are only as complete as graph curation: ``depends_on`` edges and
 team ownership must be declared/projected for those views to populate.
+
+---
+
+## ADR-0021 — Deterministic agents composing the layers, with persisted execution
+
+**Status:** Accepted · 2026-06-06 (Phase 8)
+
+**Context.** Phase 8 must deliver *agents* — incident, onboarding, architecture and
+knowledge-maintenance — that take a goal and produce an actionable, evidence-backed
+result. The platform already exposes every capability an agent needs: retrieval
+(Phase 4), the knowledge graph (Phase 3), trust (Phase 5) and intelligence (Phase 7).
+Two pressures apply: keep the increment deterministic and offline-testable (consistent
+with ADR-0010/0013/0014/0017/0019/0020 — no external model provider yet), and make agent
+behavior **auditable** (the master mandate names an Agent Execution Viewer and Audit
+Trail, and autonomous actions over engineering knowledge must be reviewable).
+
+**Options.**
+1. Introduce an LLM/tool-calling agent runtime now (planning + tool use by a model).
+2. Deterministic, fixed-plan agents that compose the existing services; persist the run
+   + steps + a result snapshot for review.
+3. Stateless agents that compute on read and persist nothing (like Trust/Intelligence).
+
+**Decision.** Option 2. Each agent is a **pure, fixed-plan planner** in ``app/agents/``
+(one module per agent) returning an ``AgentReport`` — a headline + overall confidence,
+``findings``, recommended ``actions`` and trust-carrying ``evidence``, plus the ordered
+``steps`` it took. ``AgentService`` builds an ``AgentContext`` over the four layers, runs
+the selected planner, and **persists the run**: each step becomes an ``AgentStep`` row
+(the execution trace) and the conclusions are stored as a JSON snapshot on the
+``AgentRun`` (the audit record). Unlike Trust/Intelligence (ADR-0017/0020), agents *do*
+persist — but only to PostgreSQL (no new datastore), because the run trace and audit
+record are the deliverable. Overall confidence is the mean of the cited evidence's
+Phase-5 trust, so **every agent result carries trust**. Planner failures are captured as
+a failed step + failed run, never raised (ADR-0009 posture). Running an agent requires
+VIEWER and is audited (it reads knowledge; the run record is a user-scoped artifact, the
+same call posture as the assistant in ADR-0019).
+
+**Consequences.** Agent runs are reproducible, offline-testable and fully reviewable —
+the Execution Viewer shows exactly what each agent did and concluded, and the Audit Trail
+records who ran what. The fixed plans + heuristic phrasing are the seam for an LLM-backed
+planner/tool-use upgrade behind ``AgentService`` (the persistence + audit contract stays
+the same). Agents inherit every upstream limitation: coverage is only as good as graph
+curation + corpus ingestion, dependency reasoning is single-edge, and evidence quality
+tracks the deterministic retrieval/trust heuristics. Runs execute synchronously in-request
+(bounded), with no background worker or scheduling yet.

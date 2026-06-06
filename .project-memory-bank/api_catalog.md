@@ -66,6 +66,10 @@ catalog.
 | `GET /intelligence/debt` | viewer | — | `DebtReportResponse` | api/routes/intelligence | implemented |
 | `GET /intelligence/incidents` | viewer | — | `IncidentReportResponse` | api/routes/intelligence | implemented |
 | `GET /intelligence/ownership` | viewer | — | `OwnershipReportResponse` | api/routes/intelligence | implemented |
+| `GET /agents/catalog` | viewer | — | `AgentCatalogResponse` | api/routes/agents | implemented |
+| `POST /agents/runs` | viewer | `RunAgentRequest` | `AgentRunDetailResponse` | api/routes/agents | implemented |
+| `GET /agents/runs` | viewer | `?limit&offset` | `AgentRunListResponse` | api/routes/agents | implemented |
+| `GET /agents/runs/{id}` | viewer | — | `AgentRunDetailResponse` | api/routes/agents | implemented |
 
 > `GET /health` is liveness (process up, no I/O). `GET /health/ready` is readiness:
 > it aggregates PostgreSQL/Neo4j/Qdrant health and returns **503** when any store is
@@ -121,4 +125,13 @@ catalog.
 > `GET /intelligence/incidents` reports incident impact + resolution; `GET
 > /intelligence/ownership` reports coverage, orphaned components and key-person load.
 
-Phase 8 will add agent endpoints — each added here when implemented.
+> **Agents (Phase 8).** Tenant-scoped; agents compose retrieval + graph + trust +
+> intelligence deterministically (ADR-0021), no model provider. `GET /agents/catalog`
+> lists the runnable agents (incident/onboarding/architecture/maintenance) and whether
+> each needs a target. `POST /agents/runs` runs an agent (VIEWER, audited as
+> `agent.run`), persisting an `AgentRun` + ordered `AgentStep` trace and returning the
+> run with its result snapshot (headline, findings, prioritized actions, trust-carrying
+> evidence). `GET /agents/runs` is the Audit Trail; `GET /agents/runs/{id}` backs the
+> Execution Viewer. Planner failures are captured as a failed run, never a 5xx.
+
+EKIP backend phases (0–8) are complete; further endpoints are added here when implemented.

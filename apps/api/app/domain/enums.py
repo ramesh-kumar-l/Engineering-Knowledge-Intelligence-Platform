@@ -141,3 +141,20 @@ class MessageRole(StrEnum):
 
     USER = "user"
     ASSISTANT = "assistant"
+
+
+class AgentType(StrEnum):
+    """The autonomous agents EKIP can run over its knowledge (Phase 8)."""
+
+    INCIDENT = "incident"  # triage an incident: impact, owners, related history
+    ONBOARDING = "onboarding"  # ramp on a service/component: what, who, depends on
+    ARCHITECTURE = "architecture"  # review a design: decisions, dependencies, risks
+    MAINTENANCE = "maintenance"  # surface knowledge debt: stale/unowned/low-confidence
+
+
+class AgentStepStatus(StrEnum):
+    """Outcome of one step in an agent's execution trace (Phase 8)."""
+
+    OK = "ok"  # the step produced a result
+    EMPTY = "empty"  # the step ran but found nothing (a surfaced gap, not an error)
+    FAILED = "failed"  # the step raised; the run is captured, not crashed

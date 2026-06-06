@@ -4,35 +4,38 @@
 > [`implementation_status.md`](implementation_status.md) (full status). Update before
 > ending any major feature.
 
-**Last updated:** 2026-06-06 (Phase 7)
+**Last updated:** 2026-06-06 (Phase 8)
 
 ## Where we are
 
-Phase 7 — Engineering Intelligence is **complete and verified**, sitting at the **phase
-gate** awaiting approval to start Phase 8. End-to-end runs: UI → API (JWT/RBAC,
-tenant-scoped) → Sync → documents → Processing → chunks/enrichment → Graph build (Neo4j)
-and Embedding (Qdrant) → hybrid Search → Trust scoring → Assistant (deterministic Q&A)
-→ **Intelligence** (deterministic dependency-risk / technical-debt / incident / ownership
-reports read on demand from the graph + trust).
+Phase 8 — Agent Layer is **complete and verified**. **All roadmap phases (0–8) are now
+delivered.** End-to-end: UI → API (JWT/RBAC, tenant-scoped) → Sync → documents →
+Processing → chunks/enrichment → Graph build (Neo4j) and Embedding (Qdrant) → hybrid
+Search → Trust scoring → Assistant (deterministic Q&A) → Intelligence (dependency /
+debt / incident / ownership reports) → **Agents** (deterministic, fixed-plan agents that
+compose all of the above and persist an auditable run + step trace + result snapshot).
 
 ## What just happened (this increment)
 
-Built the intelligence layer: pure pieces in `app/intelligence/` — `dependency.py`
-(fan-in/out, blast-radius risk score, Tarjan-SCC cycle detection over `depends_on`),
-`debt.py` (severity from low-confidence/stale/unowned trust items), `incident.py` (impact
-+ resolution over `impacts`/`resolved`), `ownership.py` (coverage, orphans, key-person
-load over `owns`/`modified`), a shared `scoring.py` (saturate/clamp/band) and frozen
-value objects in `base.py`. `intelligence_service.py` fetches bounded graph + trust inputs
-and delegates; `overview` aggregates headline metrics. New `RiskBand` enum. Read-write
-APIs are read-only (`routes/intelligence.py`): `GET /intelligence/overview`,
-`/dependencies`, `/debt`, `/incidents`, `/ownership` (VIEWER, tenant-scoped). Three
-screens: Intelligence Dashboard, Dependency Risk Dashboard, Technical Debt Dashboard. TS
-contracts (`intelligence.ts`). Added ADR-0020. **No new datastore, no model provider** —
-everything is computed on read, nothing persisted (same posture as Trust, ADR-0017).
+Built the agent layer in `app/agents/`: pure fixed-plan planners — `incident_agent`
+(impact + resolution + owners), `onboarding_agent` (sources + owners + dependency
+profile), `architecture_agent` (decisions + cycles + high-risk components + stale-doc
+risk), `maintenance_agent` (corpus knowledge debt + orphans, no target) — plus `base.py`
+(frozen `AgentReport`/`AgentFinding`/`AgentAction`/`AgentEvidence`/`AgentStepResult`),
+`context.py` (`AgentContext` over retrieval + trust + graph + intelligence), `compose.py`
+(trust-carrying evidence gathering, owner lookup, confidence aggregation), `catalog.py`,
+`serialize.py`, and `agent_service.py` (dispatch → run → persist). New `AgentType` +
+`AgentStepStatus` enums. Persistence: `AgentRun` + `AgentStep` (PostgreSQL) +
+`AgentRepository`. APIs (`routes/agents.py`): `GET /agents/catalog`, `POST /agents/runs`
+(audited), `GET /agents/runs`, `GET /agents/runs/{id}` (VIEWER, tenant-scoped). Three
+screens: Agent Workspace, Agent Execution Viewer, Agent Audit Trail. TS contracts
+(`agents.ts`). Added ADR-0021. **No new datastore, no model provider** — agents persist
+their run/trace/result to PostgreSQL (the audit deliverable), composing the existing
+layers deterministically.
 
-Gates: API `ruff` clean · `mypy app` clean (123 files) · `pytest` **160/160**. Web
-`lint` · `typecheck` · `build` all green (routes incl. /intelligence, /intelligence/debt,
-/intelligence/dependencies).
+Gates: API `ruff` clean · `mypy app` clean (138 files) · `pytest` **175/175**. Web
+`lint` · `typecheck` · `build` all green (routes incl. /agents, /agents/[id],
+/agents/audit).
 
 ## How to run it
 
@@ -43,29 +46,33 @@ cd apps/web && npm run dev                                # Web on :3000
 ```
 
 Flow to exercise: add a GitHub connector → Run sync → Run processing → Build graph →
-(curate `depends_on` edges between services in the Knowledge Graph) → open
-**Intelligence** → see dependency risk + cycles, technical-debt severity (linked to the
-**Trust Inspector**), incidents and ownership coverage/orphans. Dev auth: web client
-sends `X-Tenant-Id`/`X-Role` headers.
+(curate `depends_on` edges) → embed (Search) → open **Agents** → run an agent (e.g.
+Incident "checkout outage", or Knowledge Maintenance with no target) → review the
+findings, prioritized actions, trust-carrying evidence and execution trace in the
+Execution Viewer; the Audit Trail lists every run. Dev auth: web client sends
+`X-Tenant-Id`/`X-Role` headers.
 
 ## Active decisions / constraints to remember
 
-- Intelligence is **read-only, deterministic and composed** (ADR-0020): no model
-  provider, no new datastore — it reads the graph (Phase 3) + trust (Phase 5) on demand.
-  Risk/severity use **fixed heuristic weights** banded by `RiskBand`; the analyzers are
-  pure and offline-testable; the weights are seams for later calibration.
-- Coverage is honest: unowned/orphaned components and missing `depends_on` curation are
-  **surfaced as gaps**, never fabricated. Dependency + ownership views are only as complete
-  as graph curation.
-- Reports are **computed on read with no caching** — a cached/materialized read model is
-  the scale upgrade behind the service seam. Dependency reasoning is single-edge (fan-in/
-  out + cycles), not multi-hop transitive impact; no trend/time-series yet.
+- Agents are **deterministic, fixed-plan and auditable** (ADR-0021): no model provider;
+  they compose retrieval + graph + trust + intelligence and **persist** the run + step
+  trace + result snapshot to PostgreSQL (no new datastore). Overall confidence = mean of
+  cited trust, so **every result carries trust**. Planner failures are captured as a
+  failed run (ADR-0009), never raised.
+- Running an agent requires VIEWER and is audited (`agent.run`) — same call posture as the
+  assistant (agents read knowledge; the run record is the user-scoped, reviewable
+  artifact).
+- The fixed plans + templated phrasing are the seam for an LLM-backed planner/tool-use
+  upgrade behind `AgentService`; the persistence + audit contract stays the same. Runs are
+  synchronous in-request (bounded) — no scheduling/triggers or worker yet.
 - Keep files < 300 lines; one concern per file. Python schemas authoritative; TS
   `packages/contracts` mirror them.
 
-## Next step (after gate approval)
+## Next step
 
-Phase 8 — Agent Layer: incident agents, onboarding agents, architecture agents,
-knowledge-maintenance agents over the intelligence + assistant + graph + trust layers.
-Screens: Agent Workspace, Agent Execution Viewer, Agent Audit Trail. See
-[`roadmap.md`](roadmap.md) Phase 8.
+No further roadmap phases remain. Next investments are production-hardening items tracked
+as debt (see [`implementation_status.md`](implementation_status.md) "Recommended next
+action"): the remaining 5 connectors, Alembic migrations, OAuth/OIDC + SSO login UI, a
+background worker for all run paths (incl. agents), and the LLM-backed upgrades behind
+their existing seams. Each should be scoped + ADR'd before implementation. **STOP for
+direction** before starting a hardening workstream.

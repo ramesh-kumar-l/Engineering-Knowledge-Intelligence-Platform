@@ -24,9 +24,9 @@ It is designed to eventually answer, with visible trust:
 
 | | |
 |---|---|
-| **Current phase** | Phase 7 — Engineering Intelligence (complete, at phase gate) |
-| **Delivered** | Phases 0–6 **and** Phase 7 intelligence: deterministic dependency-risk / technical-debt / incident / ownership reports composed on read from the graph + trust (no model provider, no new datastore); intelligence APIs + Intelligence / Technical Debt / Dependency Risk dashboards |
-| **Next phase** | Phase 8 — Agent Layer (awaiting gate approval) |
+| **Current phase** | Phase 8 — Agent Layer (complete) — **all roadmap phases (0–8) delivered** |
+| **Delivered** | Phases 0–7 **and** Phase 8 agents: deterministic, fixed-plan incident / onboarding / architecture / knowledge-maintenance agents that compose retrieval + graph + trust + intelligence (no model provider, no new datastore) and persist an auditable run + step trace + trust-carrying result; agent APIs + Agent Workspace / Execution Viewer / Audit Trail |
+| **Next** | Production-hardening (tracked as debt): remaining connectors, Alembic, OAuth/SSO login UI, background worker, LLM-backed upgrades behind existing seams |
 
 The authoritative, always-current status lives in
 [`.project-memory-bank/implementation_status.md`](.project-memory-bank/implementation_status.md).
@@ -59,11 +59,11 @@ truth. Before any work, read in order:
 ├── apps/
 │   ├── api/                 # FastAPI backend (health, connectors, sync, documents,
 │   │                        #   processing, graph, embeddings, search, trust, assistant,
-│   │                        #   intelligence; models/repositories/processing/graph/
-│   │                        #   retrieval/trust/assistant/intelligence/services;
+│   │                        #   intelligence, agents; models/repositories/processing/graph/
+│   │                        #   retrieval/trust/assistant/intelligence/agents/services;
 │   │                        #   PG + Neo4j + Qdrant; JWT + audit)
 │   └── web/                 # Next.js frontend (Overview + Connectors/Sync/Processing/
-│                            #   Knowledge Graph/Search/Trust/Assistant/Intelligence UI)
+│                            #   Knowledge Graph/Search/Trust/Assistant/Intelligence/Agents UI)
 ├── packages/
 │   └── contracts/           # Shared TS API contract types (mirror Pydantic schemas)
 ├── infra/                   # docker-compose: PostgreSQL + Neo4j + Qdrant

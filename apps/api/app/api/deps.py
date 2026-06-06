@@ -13,12 +13,14 @@ from collections.abc import AsyncIterator
 from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.agents.agent_service import AgentService
 from app.assistant.assistant_service import AssistantService
 from app.core.crypto import SecretBox
 from app.core.db import DataStores
 from app.graph.neo4j_store import Neo4jGraphStore
 from app.graph.store import GraphStore
 from app.intelligence.intelligence_service import IntelligenceService
+from app.repositories.agents import AgentRepository
 from app.repositories.audit import AuditRepository
 from app.repositories.chunks import ChunkRepository
 from app.repositories.connectors import ConnectorRepository
@@ -214,6 +216,22 @@ def get_intelligence_service(
     """Engineering Intelligence over the graph + trust layers (Phase 7)."""
     trust = TrustService(TrustRepository(session), ChunkRepository(session), graph_store)
     return IntelligenceService(graph_store, trust)
+
+
+def get_agent_service(
+    session: AsyncSession = Depends(get_session),
+    embedder: Embedder = Depends(get_embedder),
+    store: VectorStore = Depends(get_vector_store),
+    graph_store: GraphStore = Depends(get_graph_store),
+) -> AgentService:
+    """Agent Layer over retrieval + trust + graph + intelligence (Phase 8)."""
+    chunk_repo = ChunkRepository(session)
+    search = SearchService(embedder, store, chunk_repo, graph_store)
+    trust = TrustService(TrustRepository(session), chunk_repo, graph_store)
+    intelligence = IntelligenceService(graph_store, trust)
+    return AgentService(
+        AgentRepository(session), search, trust, graph_store, intelligence
+    )
 
 
 def get_trust_repo(session: AsyncSession = Depends(get_session)) -> TrustRepository:
