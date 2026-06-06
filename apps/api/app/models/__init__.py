@@ -2,15 +2,25 @@
 
 from app.models.audit import AuditEvent
 from app.models.base import Base
+from app.models.chunk import Chunk
 from app.models.connector import Connector
 from app.models.document import Document
+from app.models.enrichment import DocumentEnrichment
+from app.models.graph import GraphBuildEvent, GraphBuildRun
+from app.models.processing import ProcessingEvent, ProcessingRun
 from app.models.sync import SyncEvent, SyncRun
 
 __all__ = [
     "AuditEvent",
     "Base",
+    "Chunk",
     "Connector",
     "Document",
+    "DocumentEnrichment",
+    "GraphBuildEvent",
+    "GraphBuildRun",
+    "ProcessingEvent",
+    "ProcessingRun",
     "SyncEvent",
     "SyncRun",
 ]

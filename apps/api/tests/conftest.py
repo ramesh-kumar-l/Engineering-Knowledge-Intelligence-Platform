@@ -16,9 +16,10 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.pool import StaticPool
 
 import app.models  # noqa: F401 - registers all tables on Base.metadata
-from app.api.deps import get_datastores, get_session
+from app.api.deps import get_datastores, get_graph_store, get_session
 from app.core.config import Settings
 from app.core.db.registry import DataStoreStatus
+from app.graph.store import InMemoryGraphStore
 from app.main import create_app
 from app.models.base import Base
 
@@ -100,5 +101,9 @@ def db_client(
                 raise
 
     app.dependency_overrides[get_session] = _get_session
+    # Neo4j has no embeddable test engine; an in-memory store stands in for the graph
+    # (ADR-0012), shared across requests so a build is visible to later reads.
+    graph_store = InMemoryGraphStore()
+    app.dependency_overrides[get_graph_store] = lambda: graph_store
     with TestClient(app) as test_client:
         yield test_client

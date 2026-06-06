@@ -11,7 +11,7 @@ const NAV_ITEMS = [
   { label: "Overview", href: "/", enabled: true },
   { label: "Connectors", href: "/connectors", enabled: true },
   { label: "Sync", href: "/sync", enabled: true },
-  { label: "Knowledge", href: "#", enabled: false },
+  { label: "Processing", href: "/processing", enabled: true },
   { label: "Search", href: "#", enabled: false },
   { label: "Assistant", href: "#", enabled: false },
 ];

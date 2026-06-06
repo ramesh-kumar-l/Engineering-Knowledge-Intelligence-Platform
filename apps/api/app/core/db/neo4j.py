@@ -27,6 +27,13 @@ class Neo4jStore:
             await self._driver.close()
             self._driver = None
 
+    @property
+    def driver(self) -> AsyncDriver:
+        """The connected driver for the graph store (Phase 3). Raises if offline."""
+        if self._driver is None:
+            raise RuntimeError("Neo4jStore is not connected")
+        return self._driver
+
     async def health_check(self) -> DataStoreStatus:
         if self._driver is None:
             return DataStoreStatus(self.name, healthy=False, detail="not connected")

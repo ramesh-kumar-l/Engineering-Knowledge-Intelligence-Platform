@@ -204,3 +204,50 @@ service is queue-agnostic, so a worker can later invoke the exact same code path
 **Consequences.** Simplest correct option; fully testable without infrastructure.
 Long syncs are bounded per request; large backfills need the worker (deferred,
 tracked in implementation_status.md). No re-split of the modular monolith required.
+
+---
+
+## ADR-0010 — Deterministic, pluggable processing pipeline (no LLM yet)
+
+**Status:** Accepted · 2026-06-06 (Phase 2)
+
+**Context.** The processing layer must parse, chunk, classify, enrich and summarize
+ingested documents. LLM-based implementations are powerful but add an external
+provider dependency, non-determinism, cost, and tests that need network/keys —
+working against a "production-stable, testable" first increment.
+
+**Options.**
+1. LLM-backed classification/summarization now (provider + keys + prompts).
+2. Deterministic, dependency-light steps (regex parsing, frequency-based keywords/
+   summary, heuristic classification) behind small per-step modules.
+3. Defer the layer.
+
+**Decision.** Option 2. Each step is a pure function in its own module under
+``app/processing/`` (``parser``, ``chunker``, ``classifier``, ``enricher``,
+``summarizer``), composed by ``pipeline.process``. No I/O, no external models, fully
+deterministic — so every step is unit-testable and runs offline. The module
+boundaries are the seam: an LLM-backed implementation can replace any single step
+without touching the service or the rest of the pipeline.
+
+**Consequences.** Stable, fast, free, reproducible output now; quality is heuristic,
+not semantic. Swapping in model-backed steps later is isolated and low-risk. Tracked
+as a deliberate upgrade path, not debt.
+
+---
+
+## ADR-0011 — Persist chunks in PostgreSQL; defer vectorization to Retrieval
+
+**Status:** Accepted · 2026-06-06 (Phase 2)
+
+**Context.** Chunks are the unit later embedded into Qdrant for vector retrieval.
+Embedding now requires choosing a model/provider and standing up Qdrant write paths,
+neither of which retrieval (Phase 4) has specified yet.
+
+**Decision.** Store chunks (text + counts + content hash) in PostgreSQL as the system
+of record. ``Chunk`` carries everything an embedding step will need; chunks for a
+document are replaced wholesale on reprocessing. Embedding into Qdrant is owned by the
+Retrieval phase.
+
+**Consequences.** Phase 2 stays single-datastore (PostgreSQL), matching R1 mitigation
+(Neo4j/Qdrant unused until later phases). Re-embedding is a clean downstream pass over
+stored chunks. The chunk schema is stable for the embedding step to build on.

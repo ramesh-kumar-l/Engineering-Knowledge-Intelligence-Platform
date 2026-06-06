@@ -32,6 +32,13 @@ catalog.
 | `GET /sync/runs/{id}` | viewer | — | `SyncRunOut` | api/routes/sync | implemented |
 | `GET /sync/runs/{id}/events` | viewer | — | `SyncEventListResponse` | api/routes/sync | implemented |
 | `GET /documents` | viewer | `?connector_id&limit&offset` | `DocumentListResponse` | api/routes/documents | implemented |
+| `POST /processing/runs` | editor | `ProcessingTriggerRequest` (optional) | `ProcessingRunOut` | api/routes/processing | implemented |
+| `GET /processing/runs` | viewer | `?limit` | `ProcessingRunListResponse` | api/routes/processing | implemented |
+| `GET /processing/runs/{id}` | viewer | — | `ProcessingRunOut` | api/routes/processing | implemented |
+| `GET /processing/runs/{id}/events` | viewer | — | `ProcessingEventListResponse` | api/routes/processing | implemented |
+| `GET /processing/stats` | viewer | — | `ChunkStatsResponse` | api/routes/processing | implemented |
+| `GET /processing/documents` | viewer | `?limit&offset` | `ProcessedDocumentListResponse` | api/routes/processing | implemented |
+| `GET /processing/documents/{document_id}` | viewer | — | `DocumentProcessingDetail` | api/routes/processing | implemented |
 
 > `GET /health` is liveness (process up, no I/O). `GET /health/ready` is readiness:
 > it aggregates PostgreSQL/Neo4j/Qdrant health and returns **503** when any store is
@@ -43,5 +50,10 @@ catalog.
 > fallback (`X-Tenant-Id` / `X-Role`) is accepted. Every response is tenant-scoped to
 > the principal; mutations write an `AuditEvent`.
 
-Phase 2+ will add processing, graph, retrieval, trust, assistant, intelligence, and
-agent endpoints — each added here when implemented.
+> **Processing (Phase 2).** `POST /processing/runs` executes the pipeline
+> synchronously (ADR-0009) over documents needing (re)processing and records a
+> `ProcessingRun` + events + an `AuditEvent`. `GET /processing/stats` powers Chunk
+> Statistics; `GET /processing/documents{,/{id}}` power the Parsing Explorer.
+
+Phase 3+ will add graph, retrieval, trust, assistant, intelligence, and agent
+endpoints — each added here when implemented.

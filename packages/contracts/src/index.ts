@@ -9,3 +9,5 @@ export type * from "./health";
 export type * from "./connectors";
 export type * from "./sync";
 export type * from "./documents";
+export type * from "./processing";
+export type * from "./chunks";

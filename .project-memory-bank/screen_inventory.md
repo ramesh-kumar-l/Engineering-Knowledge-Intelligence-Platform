@@ -12,10 +12,10 @@ Design language: [`ui_design_system.md`](ui_design_system.md).
 | Connector Details | 1 | J7 | ✅ |
 | Sync Dashboard | 1 | J7 | ✅ |
 | Sync Logs | 1 | J7 | ✅ |
-| Processing Dashboard | 2 | (ops support for J1–J6) | ⬜ |
-| Chunk Statistics | 2 | (ops) | ⬜ |
-| Parsing Explorer | 2 | (ops) | ⬜ |
-| Processing Jobs | 2 | (ops) | ⬜ |
+| Processing Dashboard | 2 | (ops support for J1–J6) | ✅ |
+| Chunk Statistics | 2 | (ops) | ✅ |
+| Parsing Explorer | 2 | (ops) | ✅ |
+| Processing Jobs | 2 | (ops) | ✅ |
 | Knowledge Explorer | 3 | J1, J3, J6 | ⬜ |
 | Service Explorer | 3 | J1, J2 | ⬜ |
 | Team Explorer | 3 | J2, J6 | ⬜ |

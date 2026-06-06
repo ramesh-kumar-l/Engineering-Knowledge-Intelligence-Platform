@@ -22,7 +22,7 @@ Increments:
 
 ---
 
-## Phase 1 — Knowledge Ingestion Layer 🟡
+## Phase 1 — Knowledge Ingestion Layer ✅
 
 Sources: GitHub, GitLab, Jira, Confluence, Slack, Notion.
 Capabilities: incremental sync, metadata extraction, change tracking.
@@ -49,16 +49,37 @@ Delivered:
 Deferred to later (tracked in implementation_status.md): connectors for the other 5
 sources, a durable background sync worker/queue, Alembic migrations, JWKS/SSO login UI.
 
-**🚦 Phase gate — awaiting approval to proceed to Phase 2.**
+**🚦 Phase gate — approved; Phase 2 delivered below.**
 
 ---
 
-## Phase 2 — Knowledge Processing Layer ⬜
+## Phase 2 — Knowledge Processing Layer ✅
 
 Capabilities: parsing, chunking, classification, enrichment, summarization.
 UI: Processing Dashboard, Chunk Statistics, Parsing Explorer, Processing Jobs.
 
-**STOP — wait for approval.**
+Delivered:
+- ✅ **Pipeline** — deterministic, dependency-light steps in `app/processing/`
+  (parser, chunker, classifier, enricher, summarizer) composed by `pipeline.process`;
+  pluggable for an LLM-backed upgrade (ADR-0010).
+- ✅ **Persistence** — `ProcessingRun`/`ProcessingEvent`, 1:1 `DocumentEnrichment`,
+  and `Chunk` (PostgreSQL; vectorization deferred to Retrieval, ADR-0011). Reprocessing
+  is driven by `source_content_hash` staleness.
+- ✅ **Processing engine** — `ProcessingService` selects pending/stale/failed docs,
+  runs the pipeline per document, replaces chunks, upserts enrichment, records
+  counters + events; per-document failures isolated, run failure captured (ADR-0009).
+- ✅ **APIs** — trigger/list/get processing runs + events, chunk stats, processed-doc
+  list + per-document detail (api_catalog.md); RBAC-enforced + tenant-scoped.
+- ✅ **UI** — Processing Dashboard, Processing Jobs, Chunk Statistics, Parsing Explorer
+  (server components + a run server action).
+- ✅ **Tests** — 50 passing (pipeline units, service idempotency/reprocessing,
+  routes/RBAC/stats/tenant); ruff · mypy strict · pytest green; web lint/typecheck/build.
+
+Deferred to later (tracked in implementation_status.md): LLM-backed classification/
+summarization, embedding chunks into Qdrant (Retrieval), background processing worker,
+richer per-source parsers, language detection beyond a coarse heuristic.
+
+**🚦 Phase gate — awaiting approval to proceed to Phase 3.**
 
 ---
 

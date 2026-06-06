@@ -45,3 +45,53 @@ class ChangeType(StrEnum):
     UPDATED = "updated"
     UNCHANGED = "unchanged"
     DELETED = "deleted"
+
+
+class ProcessingStatus(StrEnum):
+    """Per-document state in the Phase 2 processing pipeline."""
+
+    PENDING = "pending"
+    PROCESSED = "processed"
+    FAILED = "failed"
+
+
+class DocumentCategory(StrEnum):
+    """Heuristic classification of a document's intent (Phase 2)."""
+
+    BUG = "bug"
+    FEATURE = "feature"
+    QUESTION = "question"
+    INCIDENT = "incident"
+    DOCUMENTATION = "documentation"
+    DISCUSSION = "discussion"
+    OTHER = "other"
+
+
+class EntityKind(StrEnum):
+    """Knowledge-graph node kinds (Phase 3, domain_model.md)."""
+
+    ENGINEER = "engineer"
+    TEAM = "team"
+    REPOSITORY = "repository"
+    SERVICE = "service"
+    API = "api"
+    INCIDENT = "incident"
+    ADR = "adr"
+    DOCUMENT = "document"
+
+
+class RelationshipType(StrEnum):
+    """Knowledge-graph edge types (Phase 3, domain_model.md)."""
+
+    OWNS = "owns"
+    DEPENDS_ON = "depends_on"
+    MODIFIED = "modified"
+    IMPACTS = "impacts"
+    RESOLVED = "resolved"
+
+
+class GraphSource(StrEnum):
+    """How a graph node/edge entered the graph."""
+
+    PROJECTION = "projection"  # deterministically derived from ingested data
+    MANUAL = "manual"  # curated by an editor via the API

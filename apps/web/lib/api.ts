@@ -1,10 +1,18 @@
 import type {
+  ChunkStatsResponse,
   Connector,
   ConnectorCatalogResponse,
   ConnectorCreate,
   ConnectorListResponse,
   Document,
   DocumentListResponse,
+  DocumentProcessingDetail,
+  ProcessedDocument,
+  ProcessedDocumentListResponse,
+  ProcessingEvent,
+  ProcessingEventListResponse,
+  ProcessingRun,
+  ProcessingRunListResponse,
   ReadinessResponse,
   SourceTypeInfo,
   SyncEvent,
@@ -117,4 +125,42 @@ export async function createConnector(input: ConnectorCreate): Promise<MutationR
 
 export async function triggerSync(connectorId: string): Promise<MutationResult> {
   return postJson(`/connectors/${connectorId}/sync`);
+}
+
+// --- Phase 2: Knowledge Processing ---
+
+export async function fetchProcessingStats(): Promise<ChunkStatsResponse | null> {
+  return getJson<ChunkStatsResponse>("/processing/stats");
+}
+
+export async function fetchProcessingRuns(): Promise<ProcessingRun[]> {
+  return (await getJson<ProcessingRunListResponse>("/processing/runs"))?.runs ?? [];
+}
+
+export async function fetchProcessingRun(id: string): Promise<ProcessingRun | null> {
+  return getJson<ProcessingRun>(`/processing/runs/${id}`);
+}
+
+export async function fetchProcessingEvents(runId: string): Promise<ProcessingEvent[]> {
+  return (
+    (await getJson<ProcessingEventListResponse>(`/processing/runs/${runId}/events`))
+      ?.events ?? []
+  );
+}
+
+export async function fetchProcessedDocuments(): Promise<ProcessedDocument[]> {
+  return (
+    (await getJson<ProcessedDocumentListResponse>("/processing/documents"))?.documents ??
+    []
+  );
+}
+
+export async function fetchDocumentProcessing(
+  id: string,
+): Promise<DocumentProcessingDetail | null> {
+  return getJson<DocumentProcessingDetail>(`/processing/documents/${id}`);
+}
+
+export async function triggerProcessing(): Promise<MutationResult> {
+  return postJson("/processing/runs");
 }
