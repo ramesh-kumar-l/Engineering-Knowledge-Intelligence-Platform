@@ -9,6 +9,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from app.api.routes import (
+    assistant,
     connectors,
     documents,
     embeddings,
@@ -32,3 +33,4 @@ api_router.include_router(graph_entities.router)
 api_router.include_router(embeddings.router)
 api_router.include_router(search.router)
 api_router.include_router(trust.router)
+api_router.include_router(assistant.router)

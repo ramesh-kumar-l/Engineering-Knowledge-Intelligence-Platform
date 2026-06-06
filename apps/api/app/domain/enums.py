@@ -112,3 +112,20 @@ class FreshnessBand(StrEnum):
     RECENT = "recent"
     AGING = "aging"
     STALE = "stale"  # old or unknown last-updated time
+
+
+class AssistantIntent(StrEnum):
+    """What an engineering question is asking for (Phase 6, roadmap capabilities)."""
+
+    SERVICE = "service"  # how a service/component works
+    OWNERSHIP = "ownership"  # who owns / is accountable
+    INCIDENT = "incident"  # what caused / how an incident was handled
+    ARCHITECTURE = "architecture"  # why a design/decision was made
+    GENERAL = "general"  # fallback knowledge lookup
+
+
+class MessageRole(StrEnum):
+    """Author of a conversation message (Phase 6)."""
+
+    USER = "user"
+    ASSISTANT = "assistant"

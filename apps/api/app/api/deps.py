@@ -13,6 +13,7 @@ from collections.abc import AsyncIterator
 from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.assistant.assistant_service import AssistantService
 from app.core.crypto import SecretBox
 from app.core.db import DataStores
 from app.graph.neo4j_store import Neo4jGraphStore
@@ -20,6 +21,7 @@ from app.graph.store import GraphStore
 from app.repositories.audit import AuditRepository
 from app.repositories.chunks import ChunkRepository
 from app.repositories.connectors import ConnectorRepository
+from app.repositories.conversations import ConversationRepository
 from app.repositories.documents import DocumentRepository
 from app.repositories.embedding import EmbeddingRepository
 from app.repositories.enrichment import EnrichmentRepository
@@ -180,6 +182,27 @@ def get_search_service(
         store,
         ChunkRepository(session),
         graph_store,
+    )
+
+
+def get_conversation_repo(
+    session: AsyncSession = Depends(get_session),
+) -> ConversationRepository:
+    return ConversationRepository(session)
+
+
+def get_assistant_service(
+    session: AsyncSession = Depends(get_session),
+    embedder: Embedder = Depends(get_embedder),
+    store: VectorStore = Depends(get_vector_store),
+    graph_store: GraphStore = Depends(get_graph_store),
+) -> AssistantService:
+    """Engineering Assistant over retrieval + graph + trust (Phase 6)."""
+    chunk_repo = ChunkRepository(session)
+    search = SearchService(embedder, store, chunk_repo, graph_store)
+    trust = TrustService(TrustRepository(session), chunk_repo, graph_store)
+    return AssistantService(
+        search, trust, graph_store, ConversationRepository(session)
     )
 
 

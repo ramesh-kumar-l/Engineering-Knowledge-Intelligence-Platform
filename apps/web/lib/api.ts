@@ -1,9 +1,13 @@
 import type {
+  AskResponse,
   ChunkStatsResponse,
   Connector,
   ConnectorCatalogResponse,
   ConnectorCreate,
   ConnectorListResponse,
+  ConversationDetailResponse,
+  ConversationListResponse,
+  ConversationSummary,
   Document,
   DocumentListResponse,
   DocumentProcessingDetail,
@@ -94,6 +98,23 @@ async function postJson(path: string, body?: unknown): Promise<MutationResult> {
     return { ok: true };
   } catch {
     return { ok: false, error: "API unreachable" };
+  }
+}
+
+/** POST that returns a typed JSON body (null on failure). For read-write endpoints
+ * whose response the caller needs, e.g. asking the assistant. */
+async function postJsonFor<T>(path: string, body: unknown): Promise<T | null> {
+  try {
+    const res = await fetch(`${API_URL}${path}`, {
+      method: "POST",
+      cache: "no-store",
+      headers: { ...authHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
   }
 }
 
@@ -306,4 +327,29 @@ export async function fetchTrustProfile(
   documentId: string,
 ): Promise<TrustProfileResponse | null> {
   return getJson<TrustProfileResponse>(`/trust/documents/${documentId}`);
+}
+
+// --- Phase 6: Engineering Assistant ---
+
+export async function askAssistant(
+  question: string,
+  conversationId?: string,
+): Promise<AskResponse | null> {
+  return postJsonFor<AskResponse>("/assistant/ask", {
+    question,
+    conversation_id: conversationId ?? null,
+  });
+}
+
+export async function fetchConversations(): Promise<ConversationSummary[]> {
+  return (
+    (await getJson<ConversationListResponse>("/assistant/conversations"))
+      ?.conversations ?? []
+  );
+}
+
+export async function fetchConversation(
+  id: string,
+): Promise<ConversationDetailResponse | null> {
+  return getJson<ConversationDetailResponse>(`/assistant/conversations/${id}`);
 }

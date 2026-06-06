@@ -6,8 +6,8 @@
 
 ## Current phase
 
-**Phase 5 — Trust Layer.** Complete and verified; **at the phase gate**
-awaiting approval to start Phase 6. Phases 0–4 are done.
+**Phase 6 — Engineering Assistant.** Complete and verified; **at the phase gate**
+awaiting approval to start Phase 7. Phases 0–5 are done.
 
 ## Completed work
 
@@ -131,6 +131,34 @@ encryption + persisted audit (ADR-0008/0009), and the four ingestion screens.
   tenant isolation, routes RBAC/404/422. Gates green: ruff · mypy strict (103 files) ·
   pytest 114/114; web lint/tsc/build.
 
+### Phase 6 — Engineering Assistant ✅
+
+- **Deterministic engine (`app/assistant/`):** pure pieces — `intent.py` (ordered
+  keyword classification → SERVICE/OWNERSHIP/INCIDENT/ARCHITECTURE/GENERAL),
+  `composer.py` (extractive, templated answer assembly; overall confidence = mean of
+  cited trust), `serialize.py` (answer→JSON snapshot). No model provider (ADR-0019);
+  same layering as retrieval/graph/trust.
+- **Orchestration (`app/assistant/assistant_service.py`):** classify → hybrid retrieve
+  (Phase 4 `SearchService`) → attach Phase-5 trust to each cited document (one
+  `TrustService.profile` per unique doc) → enrich with one bounded graph neighborhood
+  (Phase 3) → compose → persist the exchange. So **every answer carries trust**.
+- **Persistence:** `Conversation` + `Message` (`app/models/conversation.py`, PostgreSQL);
+  an assistant message stores `intent`, `confidence` and a JSON `answer_json` snapshot
+  (summary, citations-with-trust, related facts) faithful to generation time.
+  `ConversationRepository` (create/add_message/touch/get/list_recent/list_messages),
+  tenant-scoped.
+- **APIs (`routes/assistant.py`):** `POST /assistant/ask` (VIEWER, audited),
+  `GET /assistant/conversations`, `GET /assistant/conversations/{id}` — tenant-scoped.
+- **Web (`apps/web/app/assistant`):** Assistant Workspace (ask + examples + recent),
+  conversation thread (answers with trust + follow-up form), Conversation History,
+  Evidence Viewer (cited sources ranked by trust, linked to the Trust Inspector).
+  Reusable `assistant-answer.tsx`. "Assistant" enabled in nav.
+- **Contracts:** TS mirror `assistant.ts`.
+- **Tests:** **138 passing** (+24): intent classification, composer (confidence
+  aggregate, empty/owners/relations), service ask/continue/list/tenant isolation,
+  routes RBAC/round-trip/404/422. Gates: ruff · mypy strict (113 files) · pytest
+  138/138; web lint/tsc/build green.
+
 ## Current architecture state
 
 End-to-end now spans ingestion → processing → knowledge graph: UI → API (JWT/RBAC,
@@ -141,7 +169,9 @@ EmbeddingService embeds chunks into Qdrant and SearchService answers queries wit
 signals on read (confidence/freshness/ownership/attribution) across all three stores.
 Modular monolith now spanning **all three datastores in use** (PostgreSQL + Neo4j +
 Qdrant). Sync/processing/build/embedding paths are all queue-agnostic for a worker; trust
-is stateless/read-time (no run path).
+is stateless/read-time (no run path). The **Engineering Assistant** sits on top,
+composing retrieval + graph + trust deterministically into evidence-backed answers and
+persisting conversations (PostgreSQL) for history + evidence review.
 
 ## Risks
 
@@ -180,6 +210,11 @@ is stateless/read-time (no run path).
 - **Ownership coverage (ADR-0018).** Owners come only from graph `modified` edges (needs
   a graph build; document authorship only); CODEOWNERS / team-of-repo inheritance is a
   later projection upgrade.
+- **Heuristic assistant (ADR-0019).** Intent is keyword-classified and answers are
+  extractive/templated (no LLM synthesis); graph enrichment is bounded to one
+  neighborhood (no multi-hop reasoning); no answer-quality evaluation harness yet. All
+  are seams for an LLM-backed upgrade. Conversations have no rename/delete and `ask` runs
+  synchronously in-request.
 - Carried from Phase 1: single implemented connector (GitHub); no Alembic migrations
   (dev `create_all`, tests SQLite); auth is HS256 shared-secret (JWKS/SSO login UI
   pending); default dev secrets MUST be overridden in prod.
@@ -193,13 +228,15 @@ is stateless/read-time (no run path).
 - Neo4j + Qdrant operational hardening (indices, backups, migrations) ahead of prod scale.
 - Trust confidence calibration: when to move from fixed heuristic weights (ADR-0017) to
   learned/calibrated weights, and whether to materialize/cache the trust read model.
+- Assistant upgrade path (ADR-0019): when to introduce LLM-backed answer synthesis +
+  intent classification, multi-hop graph reasoning, and an answer-quality eval harness.
 
 ## Recommended next action
 
-Obtain phase-gate approval, then begin **Phase 6 — Engineering Assistant** (service
-understanding, ownership discovery, incident exploration, architecture explanations)
-over the retrieval + graph + trust layers, with Assistant Workspace / Conversation
-History / Evidence Viewer screens. Every answer must carry trust (Phase 5 signals).
+Obtain phase-gate approval, then begin **Phase 7 — Engineering Intelligence**
+(dependency intelligence, technical-debt intelligence, incident intelligence, ownership
+intelligence) over the graph + trust + assistant layers, with Intelligence Dashboard /
+Technical Debt Dashboard / Dependency Risk Dashboard screens.
 
-> **Phase gate:** Phase 5 is complete and verified; **STOP for approval** before
-> Phase 6.
+> **Phase gate:** Phase 6 is complete and verified; **STOP for approval** before
+> Phase 7.

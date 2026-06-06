@@ -24,9 +24,9 @@ It is designed to eventually answer, with visible trust:
 
 | | |
 |---|---|
-| **Current phase** | Phase 5 — Trust Layer (complete, at phase gate) |
-| **Delivered** | Phases 0–4 **and** Phase 5 trust: deterministic, read-time confidence/freshness scoring + graph-attributed ownership + source attribution, trust APIs + Trust Inspector / Source Explorer / Freshness Dashboard UI |
-| **Next phase** | Phase 6 — Engineering Assistant (awaiting gate approval) |
+| **Current phase** | Phase 6 — Engineering Assistant (complete, at phase gate) |
+| **Delivered** | Phases 0–5 **and** Phase 6 assistant: deterministic Q&A composing retrieval + graph + trust (no model provider), conversations persisted, every answer carries trust; assistant APIs + Assistant Workspace / Conversation History / Evidence Viewer UI |
+| **Next phase** | Phase 7 — Engineering Intelligence (awaiting gate approval) |
 
 The authoritative, always-current status lives in
 [`.project-memory-bank/implementation_status.md`](.project-memory-bank/implementation_status.md).
@@ -58,11 +58,11 @@ truth. Before any work, read in order:
 .
 ├── apps/
 │   ├── api/                 # FastAPI backend (health, connectors, sync, documents,
-│   │                        #   processing, graph, embeddings, search, trust; models/
-│   │                        #   repositories/processing/graph/retrieval/trust/services;
-│   │                        #   PG + Neo4j + Qdrant; JWT + audit)
+│   │                        #   processing, graph, embeddings, search, trust, assistant;
+│   │                        #   models/repositories/processing/graph/retrieval/trust/
+│   │                        #   assistant/services; PG + Neo4j + Qdrant; JWT + audit)
 │   └── web/                 # Next.js frontend (Overview + Connectors/Sync/Processing/
-│                            #   Knowledge Graph/Search/Trust UI)
+│                            #   Knowledge Graph/Search/Trust/Assistant UI)
 ├── packages/
 │   └── contracts/           # Shared TS API contract types (mirror Pydantic schemas)
 ├── infra/                   # docker-compose: PostgreSQL + Neo4j + Qdrant

@@ -58,6 +58,9 @@ catalog.
 | `GET /trust/sources` | viewer | `?source_type&limit&offset` | `SourceListResponse` | api/routes/trust | implemented |
 | `GET /trust/freshness` | viewer | — | `FreshnessResponse` | api/routes/trust | implemented |
 | `GET /trust/documents/{id}` | viewer | — | `TrustProfileResponse` | api/routes/trust | implemented |
+| `POST /assistant/ask` | viewer | `AskRequest` | `AskResponse` | api/routes/assistant | implemented |
+| `GET /assistant/conversations` | viewer | `?limit&offset` | `ConversationListResponse` | api/routes/assistant | implemented |
+| `GET /assistant/conversations/{id}` | viewer | — | `ConversationDetailResponse` | api/routes/assistant | implemented |
 
 > `GET /health` is liveness (process up, no I/O). `GET /health/ready` is readiness:
 > it aggregates PostgreSQL/Neo4j/Qdrant health and returns **503** when any store is
@@ -96,5 +99,12 @@ catalog.
 > `GET /trust/sources` powers the Source Explorer; `GET /trust/freshness` powers the
 > Freshness Dashboard (corpus distribution + the documents most needing attention).
 
-Phase 6+ will add assistant, intelligence, and agent endpoints — each added here when
-implemented.
+> **Assistant (Phase 6).** Deterministic Q&A over retrieval + graph + trust (ADR-0019);
+> no model provider. `POST /assistant/ask` classifies intent, retrieves evidence, attaches
+> Phase-5 trust to every citation, enriches with one bounded graph neighborhood, composes
+> an extractive answer, and persists the exchange (`Conversation`/`Message`) — returning
+> the answer with its citations and overall confidence; it is VIEWER-gated and audited.
+> `GET /assistant/conversations{,/{id}}` power Conversation History and the conversation
+> thread / Evidence Viewer.
+
+Phase 7+ will add intelligence and agent endpoints — each added here when implemented.

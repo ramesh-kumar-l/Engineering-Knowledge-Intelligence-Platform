@@ -183,17 +183,43 @@ Deferred to later (tracked in implementation_status.md): learned/calibrated conf
 weights, a cached/materialized trust read model for large corpora, richer ownership
 (CODEOWNERS / team-of-repo inheritance), and trust observability metrics over time.
 
-**🚦 Phase gate — awaiting approval to proceed to Phase 6.**
+**🚦 Phase gate — approved; Phase 6 delivered below.**
 
 ---
 
-## Phase 6 — Engineering Assistant ⬜
+## Phase 6 — Engineering Assistant ✅
 
 Capabilities: service understanding, ownership discovery, incident exploration,
 architecture explanations.
 UI: Assistant Workspace, Conversation History, Evidence Viewer.
 
-**STOP — wait for approval.**
+Delivered:
+- ✅ **Deterministic engine** — ``app/assistant/`` composes existing layers, no model
+  provider (ADR-0019): ``intent.py`` (ordered keyword classification into SERVICE/
+  OWNERSHIP/INCIDENT/ARCHITECTURE/GENERAL), ``composer.py`` (extractive, templated
+  answer assembly), ``serialize.py`` (answer→JSON snapshot). All pure/offline-testable.
+- ✅ **Orchestration** — ``AssistantService`` classifies → hybrid-retrieves (Phase 4) →
+  attaches Phase-5 trust to every cited document → enriches with one bounded graph
+  neighborhood (Phase 3) → composes. Overall answer confidence is the mean of the cited
+  documents' trust, so **every answer carries trust**.
+- ✅ **Persistence** — ``Conversation`` + ``Message`` (PostgreSQL); an assistant message
+  stores a JSON answer snapshot (summary, citations-with-trust, related facts) faithful
+  to generation time. ``ConversationRepository`` is tenant-scoped.
+- ✅ **APIs** — `POST /assistant/ask` (VIEWER, audited), `GET /assistant/conversations`,
+  `GET /assistant/conversations/{id}` (api_catalog.md); tenant-scoped.
+- ✅ **UI** — Assistant Workspace (ask + recent), conversation thread (answers with trust
+  + follow-ups), Conversation History, Evidence Viewer (all cited sources ranked by
+  trust, linked to the Trust Inspector). "Assistant" enabled in nav.
+- ✅ **Tests** — **138 passing** (+24: intent, composer, service ask/continue/list/tenant,
+  routes RBAC/round-trip/404/422); ruff · mypy strict (113 files) · pytest green; web
+  lint/tsc/build green.
+
+Deferred to later (tracked in implementation_status.md): LLM-backed answer synthesis +
+intent classification behind the same seams, multi-hop graph reasoning (enrichment is
+bounded to one neighborhood), streaming responses, conversation rename/delete, and
+relevance/answer-quality evaluation harness.
+
+**🚦 Phase gate — awaiting approval to proceed to Phase 7.**
 
 ---
 

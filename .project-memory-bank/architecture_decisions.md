@@ -436,3 +436,35 @@ signal to confidence (ADR-0017). It is only as complete as the graph: documents 
 an author, or before a graph build, show as unowned — a true coverage signal. Richer
 ownership (CODEOWNERS, team-of-repo inheritance) is a later projection upgrade behind
 the same graph seam.
+
+---
+
+## ADR-0019 — Deterministic Engineering Assistant over retrieval + graph + trust
+
+**Status:** Accepted · 2026-06-06 (Phase 6)
+
+**Context.** The assistant must answer engineering questions (service understanding,
+ownership discovery, incident exploration, architecture explanations) with visible
+trust, without introducing an external model provider in this increment (consistent
+with ADR-0010/0013/0014/0017). It must also remember conversations so engineers can
+revisit prior answers and the evidence behind them.
+
+**Decision.** The assistant is a **deterministic composition** of the existing layers,
+not a generator. ``app/assistant/`` holds pure pieces — ``intent.py`` (ordered keyword
+classification → SERVICE/OWNERSHIP/INCIDENT/ARCHITECTURE/GENERAL), ``composer.py``
+(extractive, templated answer assembly), ``serialize.py`` (answer→JSON snapshot) — and
+``assistant_service.py`` orchestrates: classify → hybrid retrieve (Phase 4) → attach
+Phase-5 trust to every cited document → enrich with one bounded graph neighborhood
+(Phase 3) → compose. The overall answer confidence is the **mean of the cited
+documents' trust**, so every answer carries trust. Conversations and messages are
+**persisted in PostgreSQL** (``Conversation``/``Message``); an assistant message stores
+a JSON answer snapshot (summary, citations-with-trust, related facts) as it stood when
+generated. ``POST /assistant/ask`` requires VIEWER (it reads knowledge; the conversation
+record is a user-scoped convenience) and is audited.
+
+**Consequences.** Answers are reproducible, offline-testable and never fabricate beyond
+retrieved material; the snapshot makes history faithful even as the corpus changes,
+while the Evidence Viewer links each citation to the live Trust Inspector. The keyword
+intent classifier and extractive composer are heuristic seams for a later LLM-backed
+upgrade (synthesis quality), and graph enrichment is bounded to the single most relevant
+matched entity (deeper multi-hop reasoning is deferred). No new datastore is introduced.

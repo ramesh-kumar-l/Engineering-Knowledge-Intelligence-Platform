@@ -8,26 +8,31 @@
 
 ## Where we are
 
-Phase 5 — Trust is **complete and verified**, sitting at the **phase gate** awaiting
-approval to start Phase 6. End-to-end runs: UI → API (JWT/RBAC, tenant-scoped) → Sync →
-documents → Processing → chunks/enrichment → Graph build (Neo4j) and Embedding (Qdrant)
-→ hybrid Search → **Trust** scoring (confidence/freshness/ownership/attribution computed
-on read over all three datastores).
+Phase 6 — Engineering Assistant is **complete and verified**, sitting at the **phase
+gate** awaiting approval to start Phase 7. End-to-end runs: UI → API (JWT/RBAC,
+tenant-scoped) → Sync → documents → Processing → chunks/enrichment → Graph build (Neo4j)
+and Embedding (Qdrant) → hybrid Search → Trust scoring → **Assistant** (deterministic
+Q&A that composes retrieval + graph + trust into evidence-backed answers and persists
+conversations).
 
 ## What just happened (this increment)
 
-Built the trust layer: pure deterministic scoring (`app/trust/scoring.py` — freshness
-decay + band, five-signal weighted confidence with a per-signal breakdown, bands;
-ADR-0017); trust primitives (`app/trust/base.py`); a `TrustRepository` joining document +
-enrichment + embedding state in one query; a `TrustService` (`profile`, `sources`,
-`freshness`) that attributes ownership from the graph's `modified` edges (ADR-0018);
-read-only trust APIs (`routes/trust.py`); three screens (Trust Inspector, Source
-Explorer, Freshness Dashboard); TS contracts (`trust.ts`). Added ADR-0017/0018. **No new
-datastore and no new persistence** — trust is computed on read.
+Built the assistant layer: pure pieces in `app/assistant/` — `intent.py` (ordered
+keyword classification into SERVICE/OWNERSHIP/INCIDENT/ARCHITECTURE/GENERAL),
+`composer.py` (extractive, templated answer assembly; overall confidence = mean of cited
+trust), `serialize.py` (answer→JSON snapshot); `assistant_service.py` orchestrates
+classify → hybrid retrieve → attach Phase-5 trust per cited doc → enrich with one bounded
+graph neighborhood → compose → persist. New persistence: `Conversation` + `Message`
+(`app/models/conversation.py`) with a `ConversationRepository`; read-write APIs
+(`routes/assistant.py`): `POST /assistant/ask` (VIEWER, audited), `GET
+/assistant/conversations{,/{id}}`. Four screens: Assistant Workspace, conversation
+thread, Conversation History, Evidence Viewer (+ reusable `assistant-answer.tsx`). TS
+contracts (`assistant.ts`). Added ADR-0019. **No new datastore** (conversations live in
+PostgreSQL); **no model provider** — answers are deterministic.
 
-Gates: API `ruff` clean · `mypy app` clean (103 files) · `pytest` **114/114**. Web
-`lint` · `typecheck` · `build` all green (routes incl. /trust, /trust/documents/[id],
-/trust/freshness).
+Gates: API `ruff` clean · `mypy app` clean (113 files) · `pytest` **138/138**. Web
+`lint` · `typecheck` · `build` all green (routes incl. /assistant, /assistant/[id],
+/assistant/[id]/evidence, /assistant/history).
 
 ## How to run it
 
@@ -38,30 +43,29 @@ cd apps/web && npm run dev                                # Web on :3000
 ```
 
 Flow to exercise: add a GitHub connector → Run sync → Run processing → Build graph →
-Embed corpus → then **Trust → Source Explorer** (each doc's confidence/freshness/owner)
-→ open a document's **Trust Inspector** (why-this-score breakdown + provenance + owners +
-evidence) → **Freshness Dashboard** (corpus distribution + stale docs). Dev auth: web
-client sends `X-Tenant-Id`/`X-Role` headers.
+Embed corpus → open **Assistant**, ask "How does <service> work?" / "Who owns <X>?" /
+"What caused the incident?" → read the answer with per-citation trust → open **Evidence**
+(all cited sources ranked by trust, each linking to the **Trust Inspector**) → revisit via
+**Conversation History**. Dev auth: web client sends `X-Tenant-Id`/`X-Role` headers.
 
 ## Active decisions / constraints to remember
 
-- Trust is **deterministic and computed on read** (ADR-0017) — nothing persisted, so a
-  profile always reflects current state; no run/trigger UI. Confidence = weighted blend
-  of freshness/ownership/processed/embedded/richness (fixed heuristic weights, tunable in
-  `scoring.py`); contributions sum to the score for the inspector.
-- **Ownership comes from the graph** (ADR-0018): engineers with a `modified` edge into a
-  `document:<id>` node. No edge ⇒ *ownership unknown* (never guessed). Needs a graph
-  build to populate.
-- Trust read model is a single join (`TrustRepository`: document + enrichment + embedding
-  state); outer joins keep unprocessed/unembedded docs visible at lower confidence.
-- Corpus-wide views recompute per request — a cached/materialized read model is the scale
-  upgrade behind the `TrustService` seam.
+- The assistant is **deterministic and composed, not generative** (ADR-0019): no model
+  provider. Intent is keyword-classified; answers are extractive/templated; overall
+  confidence is the **mean of the cited documents' Phase-5 trust** (every answer carries
+  trust). Intent/composer are seams for a later LLM-backed upgrade.
+- **Conversations are persisted** (PostgreSQL `Conversation`/`Message`); an assistant
+  message stores a JSON `answer_json` snapshot so history is faithful even as the corpus
+  changes. The Evidence Viewer links citations to the live Trust Inspector.
+- Graph enrichment is **bounded to one neighborhood** (the top matched entity) — no
+  multi-hop reasoning yet. Trust profiles are fetched once per unique cited document.
+- `ask` is VIEWER-gated (reading knowledge) and audited; it runs synchronously in-request.
 - Keep files < 300 lines; one concern per file. Python schemas authoritative; TS
   `packages/contracts` mirror them.
 
 ## Next step (after gate approval)
 
-Phase 6 — Engineering Assistant: service understanding, ownership discovery, incident
-exploration, architecture explanations over retrieval + graph + trust; every answer
-carries trust (Phase 5 signals). Screens: Assistant Workspace, Conversation History,
-Evidence Viewer. See [`roadmap.md`](roadmap.md) Phase 6.
+Phase 7 — Engineering Intelligence: dependency intelligence, technical-debt intelligence,
+incident intelligence, ownership intelligence over the graph + trust + assistant layers.
+Screens: Intelligence Dashboard, Technical Debt Dashboard, Dependency Risk Dashboard. See
+[`roadmap.md`](roadmap.md) Phase 7.

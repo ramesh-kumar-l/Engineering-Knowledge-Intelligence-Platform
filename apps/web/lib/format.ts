@@ -1,4 +1,5 @@
 import type {
+  AssistantIntent,
   ConfidenceBand,
   ConnectorStatus,
   DocumentCategory,
@@ -89,6 +90,18 @@ const FRESHNESS_TONE: Record<FreshnessBand, Tone> = {
 
 export function freshnessTone(band: FreshnessBand): Tone {
   return FRESHNESS_TONE[band];
+}
+
+const INTENT_LABEL: Record<AssistantIntent, string> = {
+  service: "Service",
+  ownership: "Ownership",
+  incident: "Incident",
+  architecture: "Architecture",
+  general: "General",
+};
+
+export function intentLabel(intent: AssistantIntent): string {
+  return INTENT_LABEL[intent];
 }
 
 export function formatDate(iso: string | null): string {

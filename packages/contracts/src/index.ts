@@ -15,3 +15,4 @@ export type * from "./graph";
 export type * from "./embedding";
 export type * from "./search";
 export type * from "./trust";
+export type * from "./assistant";

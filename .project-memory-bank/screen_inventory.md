@@ -29,9 +29,9 @@ Design language: [`ui_design_system.md`](ui_design_system.md).
 | Trust Inspector | 5 | J1, J4 (cross-cutting) | ✅ |
 | Source Explorer | 5 | J4 | ✅ |
 | Freshness Dashboard | 5 | J5 | ✅ |
-| Assistant Workspace | 6 | J1, J2, J3, J4, J6 | ⬜ |
-| Conversation History | 6 | (assistant support) | ⬜ |
-| Evidence Viewer | 6 | J3, J4 | ⬜ |
+| Assistant Workspace | 6 | J1, J2, J3, J4, J6 | ✅ |
+| Conversation History | 6 | (assistant support) | ✅ |
+| Evidence Viewer | 6 | J3, J4 | ✅ |
 | Intelligence Dashboard | 7 | J5 | ⬜ |
 | Technical Debt Dashboard | 7 | J5 | ⬜ |
 | Dependency Risk Dashboard | 7 | J5 | ⬜ |
