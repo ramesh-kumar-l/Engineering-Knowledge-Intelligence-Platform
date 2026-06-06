@@ -7,6 +7,7 @@ import type {
   FreshnessBand,
   ProcessingStatus,
   RelationshipType,
+  RiskBand,
   SyncStatus,
 } from "@ekip/contracts";
 
@@ -102,6 +103,30 @@ const INTENT_LABEL: Record<AssistantIntent, string> = {
 
 export function intentLabel(intent: AssistantIntent): string {
   return INTENT_LABEL[intent];
+}
+
+const RISK_TONE: Record<RiskBand, Tone> = {
+  high: "danger",
+  medium: "warning",
+  low: "success",
+};
+
+export function riskTone(band: RiskBand): Tone {
+  return RISK_TONE[band];
+}
+
+const DEBT_REASON_LABEL: Record<string, string> = {
+  low_confidence: "low confidence",
+  stale: "stale",
+  unowned: "unowned",
+};
+
+export function debtReasonLabel(reason: string): string {
+  return DEBT_REASON_LABEL[reason] ?? reason;
+}
+
+export function formatPercent(ratio: number): string {
+  return `${Math.round(ratio * 100)}%`;
 }
 
 export function formatDate(iso: string | null): string {

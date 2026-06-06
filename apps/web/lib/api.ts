@@ -8,6 +8,8 @@ import type {
   ConversationDetailResponse,
   ConversationListResponse,
   ConversationSummary,
+  DebtReportResponse,
+  DependencyReportResponse,
   Document,
   DocumentListResponse,
   DocumentProcessingDetail,
@@ -28,6 +30,9 @@ import type {
   GraphRelationship,
   GraphRelationshipListResponse,
   GraphStatsResponse,
+  IncidentReportResponse,
+  OverviewResponse,
+  OwnershipReportResponse,
   ProcessedDocument,
   ProcessedDocumentListResponse,
   ProcessingEvent,
@@ -352,4 +357,26 @@ export async function fetchConversation(
   id: string,
 ): Promise<ConversationDetailResponse | null> {
   return getJson<ConversationDetailResponse>(`/assistant/conversations/${id}`);
+}
+
+// --- Phase 7: Engineering Intelligence ---
+
+export async function fetchIntelligenceOverview(): Promise<OverviewResponse | null> {
+  return getJson<OverviewResponse>("/intelligence/overview");
+}
+
+export async function fetchDependencyIntel(): Promise<DependencyReportResponse | null> {
+  return getJson<DependencyReportResponse>("/intelligence/dependencies");
+}
+
+export async function fetchDebtIntel(): Promise<DebtReportResponse | null> {
+  return getJson<DebtReportResponse>("/intelligence/debt");
+}
+
+export async function fetchIncidentIntel(): Promise<IncidentReportResponse | null> {
+  return getJson<IncidentReportResponse>("/intelligence/incidents");
+}
+
+export async function fetchOwnershipIntel(): Promise<OwnershipReportResponse | null> {
+  return getJson<OwnershipReportResponse>("/intelligence/ownership");
 }

@@ -32,9 +32,9 @@ Design language: [`ui_design_system.md`](ui_design_system.md).
 | Assistant Workspace | 6 | J1, J2, J3, J4, J6 | ✅ |
 | Conversation History | 6 | (assistant support) | ✅ |
 | Evidence Viewer | 6 | J3, J4 | ✅ |
-| Intelligence Dashboard | 7 | J5 | ⬜ |
-| Technical Debt Dashboard | 7 | J5 | ⬜ |
-| Dependency Risk Dashboard | 7 | J5 | ⬜ |
+| Intelligence Dashboard | 7 | J5 | ✅ |
+| Technical Debt Dashboard | 7 | J5 | ✅ |
+| Dependency Risk Dashboard | 7 | J5 | ✅ |
 | Agent Workspace | 8 | (agent ops) | ⬜ |
 | Agent Execution Viewer | 8 | (agent ops) | ⬜ |
 | Agent Audit Trail | 8 | (agent ops, audit) | ⬜ |

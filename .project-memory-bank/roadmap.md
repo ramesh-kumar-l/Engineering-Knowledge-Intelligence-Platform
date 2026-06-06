@@ -219,17 +219,42 @@ intent classification behind the same seams, multi-hop graph reasoning (enrichme
 bounded to one neighborhood), streaming responses, conversation rename/delete, and
 relevance/answer-quality evaluation harness.
 
-**🚦 Phase gate — awaiting approval to proceed to Phase 7.**
+**🚦 Phase gate — approved; Phase 7 delivered below.**
 
 ---
 
-## Phase 7 — Engineering Intelligence ⬜
+## Phase 7 — Engineering Intelligence ✅
 
 Capabilities: dependency intelligence, technical debt intelligence, incident
 intelligence, ownership intelligence.
 UI: Intelligence Dashboard, Technical Debt Dashboard, Dependency Risk Dashboard.
 
-**STOP — wait for approval.**
+Delivered:
+- ✅ **Deterministic engine** — ``app/intelligence/`` composes the graph (Phase 3) and
+  trust (Phase 5), no model provider and no new datastore (ADR-0020); one pure module per
+  concern: ``dependency`` (fan-in/out, blast-radius risk, Tarjan-SCC cycle detection),
+  ``debt`` (severity over low-confidence/stale/unowned trust items), ``incident`` (impact
+  + resolution), ``ownership`` (coverage, orphans, key-person load), plus a shared
+  ``scoring`` helper. All pure/offline-testable; risk/severity banded by ``RiskBand``.
+- ✅ **Orchestration** — ``IntelligenceService`` fetches bounded graph relationships/
+  entities + the trust source list and delegates to the analyzers; ``overview`` runs all
+  four and returns headline metrics. Everything is computed on read (nothing persisted).
+- ✅ **APIs** — `GET /intelligence/overview`, `/dependencies`, `/debt`, `/incidents`,
+  `/ownership` (api_catalog.md); VIEWER, tenant-scoped, read-only (no trigger).
+- ✅ **UI** — Intelligence Dashboard (headline metrics + incidents + ownership coverage/
+  orphans), Dependency Risk Dashboard (risk-ranked components + cycles), Technical Debt
+  Dashboard (severity-ranked debt + reason breakdown, linked to the Trust Inspector).
+  "Intelligence" enabled in nav.
+- ✅ **Tests** — **160 passing** (+22: dependency/debt/incident/ownership analyzers,
+  service over SQLite + in-memory graph, routes RBAC/shape/tenant); ruff · mypy strict
+  (123 files) · pytest green; web lint/tsc/build green.
+
+Deferred to later (tracked in implementation_status.md): learned/calibrated risk +
+severity weights, a cached/materialized intelligence read model for large corpora,
+multi-hop dependency reasoning and trend/time-series intelligence, and richer ownership
+inputs (CODEOWNERS / team inheritance, carried from ADR-0018).
+
+**🚦 Phase gate — awaiting approval to proceed to Phase 8.**
 
 ---
 

@@ -18,6 +18,7 @@ from app.core.crypto import SecretBox
 from app.core.db import DataStores
 from app.graph.neo4j_store import Neo4jGraphStore
 from app.graph.store import GraphStore
+from app.intelligence.intelligence_service import IntelligenceService
 from app.repositories.audit import AuditRepository
 from app.repositories.chunks import ChunkRepository
 from app.repositories.connectors import ConnectorRepository
@@ -204,6 +205,15 @@ def get_assistant_service(
     return AssistantService(
         search, trust, graph_store, ConversationRepository(session)
     )
+
+
+def get_intelligence_service(
+    session: AsyncSession = Depends(get_session),
+    graph_store: GraphStore = Depends(get_graph_store),
+) -> IntelligenceService:
+    """Engineering Intelligence over the graph + trust layers (Phase 7)."""
+    trust = TrustService(TrustRepository(session), ChunkRepository(session), graph_store)
+    return IntelligenceService(graph_store, trust)
 
 
 def get_trust_repo(session: AsyncSession = Depends(get_session)) -> TrustRepository:

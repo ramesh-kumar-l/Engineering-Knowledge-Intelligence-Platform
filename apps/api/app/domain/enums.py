@@ -114,6 +114,18 @@ class FreshnessBand(StrEnum):
     STALE = "stale"  # old or unknown last-updated time
 
 
+class RiskBand(StrEnum):
+    """Coarse severity band for an intelligence risk score (Phase 7).
+
+    Higher is worse — the inverse of ``ConfidenceBand`` — used for dependency risk
+    and technical-debt severity.
+    """
+
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+
+
 class AssistantIntent(StrEnum):
     """What an engineering question is asking for (Phase 6, roadmap capabilities)."""
 

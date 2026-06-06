@@ -4,35 +4,35 @@
 > [`implementation_status.md`](implementation_status.md) (full status). Update before
 > ending any major feature.
 
-**Last updated:** 2026-06-06
+**Last updated:** 2026-06-06 (Phase 7)
 
 ## Where we are
 
-Phase 6 — Engineering Assistant is **complete and verified**, sitting at the **phase
-gate** awaiting approval to start Phase 7. End-to-end runs: UI → API (JWT/RBAC,
+Phase 7 — Engineering Intelligence is **complete and verified**, sitting at the **phase
+gate** awaiting approval to start Phase 8. End-to-end runs: UI → API (JWT/RBAC,
 tenant-scoped) → Sync → documents → Processing → chunks/enrichment → Graph build (Neo4j)
-and Embedding (Qdrant) → hybrid Search → Trust scoring → **Assistant** (deterministic
-Q&A that composes retrieval + graph + trust into evidence-backed answers and persists
-conversations).
+and Embedding (Qdrant) → hybrid Search → Trust scoring → Assistant (deterministic Q&A)
+→ **Intelligence** (deterministic dependency-risk / technical-debt / incident / ownership
+reports read on demand from the graph + trust).
 
 ## What just happened (this increment)
 
-Built the assistant layer: pure pieces in `app/assistant/` — `intent.py` (ordered
-keyword classification into SERVICE/OWNERSHIP/INCIDENT/ARCHITECTURE/GENERAL),
-`composer.py` (extractive, templated answer assembly; overall confidence = mean of cited
-trust), `serialize.py` (answer→JSON snapshot); `assistant_service.py` orchestrates
-classify → hybrid retrieve → attach Phase-5 trust per cited doc → enrich with one bounded
-graph neighborhood → compose → persist. New persistence: `Conversation` + `Message`
-(`app/models/conversation.py`) with a `ConversationRepository`; read-write APIs
-(`routes/assistant.py`): `POST /assistant/ask` (VIEWER, audited), `GET
-/assistant/conversations{,/{id}}`. Four screens: Assistant Workspace, conversation
-thread, Conversation History, Evidence Viewer (+ reusable `assistant-answer.tsx`). TS
-contracts (`assistant.ts`). Added ADR-0019. **No new datastore** (conversations live in
-PostgreSQL); **no model provider** — answers are deterministic.
+Built the intelligence layer: pure pieces in `app/intelligence/` — `dependency.py`
+(fan-in/out, blast-radius risk score, Tarjan-SCC cycle detection over `depends_on`),
+`debt.py` (severity from low-confidence/stale/unowned trust items), `incident.py` (impact
++ resolution over `impacts`/`resolved`), `ownership.py` (coverage, orphans, key-person
+load over `owns`/`modified`), a shared `scoring.py` (saturate/clamp/band) and frozen
+value objects in `base.py`. `intelligence_service.py` fetches bounded graph + trust inputs
+and delegates; `overview` aggregates headline metrics. New `RiskBand` enum. Read-write
+APIs are read-only (`routes/intelligence.py`): `GET /intelligence/overview`,
+`/dependencies`, `/debt`, `/incidents`, `/ownership` (VIEWER, tenant-scoped). Three
+screens: Intelligence Dashboard, Dependency Risk Dashboard, Technical Debt Dashboard. TS
+contracts (`intelligence.ts`). Added ADR-0020. **No new datastore, no model provider** —
+everything is computed on read, nothing persisted (same posture as Trust, ADR-0017).
 
-Gates: API `ruff` clean · `mypy app` clean (113 files) · `pytest` **138/138**. Web
-`lint` · `typecheck` · `build` all green (routes incl. /assistant, /assistant/[id],
-/assistant/[id]/evidence, /assistant/history).
+Gates: API `ruff` clean · `mypy app` clean (123 files) · `pytest` **160/160**. Web
+`lint` · `typecheck` · `build` all green (routes incl. /intelligence, /intelligence/debt,
+/intelligence/dependencies).
 
 ## How to run it
 
@@ -43,29 +43,29 @@ cd apps/web && npm run dev                                # Web on :3000
 ```
 
 Flow to exercise: add a GitHub connector → Run sync → Run processing → Build graph →
-Embed corpus → open **Assistant**, ask "How does <service> work?" / "Who owns <X>?" /
-"What caused the incident?" → read the answer with per-citation trust → open **Evidence**
-(all cited sources ranked by trust, each linking to the **Trust Inspector**) → revisit via
-**Conversation History**. Dev auth: web client sends `X-Tenant-Id`/`X-Role` headers.
+(curate `depends_on` edges between services in the Knowledge Graph) → open
+**Intelligence** → see dependency risk + cycles, technical-debt severity (linked to the
+**Trust Inspector**), incidents and ownership coverage/orphans. Dev auth: web client
+sends `X-Tenant-Id`/`X-Role` headers.
 
 ## Active decisions / constraints to remember
 
-- The assistant is **deterministic and composed, not generative** (ADR-0019): no model
-  provider. Intent is keyword-classified; answers are extractive/templated; overall
-  confidence is the **mean of the cited documents' Phase-5 trust** (every answer carries
-  trust). Intent/composer are seams for a later LLM-backed upgrade.
-- **Conversations are persisted** (PostgreSQL `Conversation`/`Message`); an assistant
-  message stores a JSON `answer_json` snapshot so history is faithful even as the corpus
-  changes. The Evidence Viewer links citations to the live Trust Inspector.
-- Graph enrichment is **bounded to one neighborhood** (the top matched entity) — no
-  multi-hop reasoning yet. Trust profiles are fetched once per unique cited document.
-- `ask` is VIEWER-gated (reading knowledge) and audited; it runs synchronously in-request.
+- Intelligence is **read-only, deterministic and composed** (ADR-0020): no model
+  provider, no new datastore — it reads the graph (Phase 3) + trust (Phase 5) on demand.
+  Risk/severity use **fixed heuristic weights** banded by `RiskBand`; the analyzers are
+  pure and offline-testable; the weights are seams for later calibration.
+- Coverage is honest: unowned/orphaned components and missing `depends_on` curation are
+  **surfaced as gaps**, never fabricated. Dependency + ownership views are only as complete
+  as graph curation.
+- Reports are **computed on read with no caching** — a cached/materialized read model is
+  the scale upgrade behind the service seam. Dependency reasoning is single-edge (fan-in/
+  out + cycles), not multi-hop transitive impact; no trend/time-series yet.
 - Keep files < 300 lines; one concern per file. Python schemas authoritative; TS
   `packages/contracts` mirror them.
 
 ## Next step (after gate approval)
 
-Phase 7 — Engineering Intelligence: dependency intelligence, technical-debt intelligence,
-incident intelligence, ownership intelligence over the graph + trust + assistant layers.
-Screens: Intelligence Dashboard, Technical Debt Dashboard, Dependency Risk Dashboard. See
-[`roadmap.md`](roadmap.md) Phase 7.
+Phase 8 — Agent Layer: incident agents, onboarding agents, architecture agents,
+knowledge-maintenance agents over the intelligence + assistant + graph + trust layers.
+Screens: Agent Workspace, Agent Execution Viewer, Agent Audit Trail. See
+[`roadmap.md`](roadmap.md) Phase 8.

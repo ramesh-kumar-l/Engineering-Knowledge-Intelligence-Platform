@@ -2,12 +2,12 @@
 
 > **Read this first.** Live state of the project. Updated after every task.
 
-**Last updated:** 2026-06-06
+**Last updated:** 2026-06-06 (Phase 7)
 
 ## Current phase
 
-**Phase 6 — Engineering Assistant.** Complete and verified; **at the phase gate**
-awaiting approval to start Phase 7. Phases 0–5 are done.
+**Phase 7 — Engineering Intelligence.** Complete and verified; **at the phase gate**
+awaiting approval to start Phase 8. Phases 0–6 are done.
 
 ## Completed work
 
@@ -159,6 +159,31 @@ encryption + persisted audit (ADR-0008/0009), and the four ingestion screens.
   routes RBAC/round-trip/404/422. Gates: ruff · mypy strict (113 files) · pytest
   138/138; web lint/tsc/build green.
 
+### Phase 7 — Engineering Intelligence ✅
+
+- **Deterministic engine (`app/intelligence/`):** read-only composition of the graph
+  (Phase 3) + trust (Phase 5), no model provider and **no new datastore** (ADR-0020) —
+  one pure module per concern: `dependency.py` (fan-in/out, blast-radius risk score,
+  Tarjan-SCC cycle detection over `depends_on`), `debt.py` (severity from low-confidence
+  / stale / unowned trust items), `incident.py` (impact + resolution over `impacts`/
+  `resolved`), `ownership.py` (coverage, orphaned components, key-person load over
+  `owns`/`modified`), plus a shared `scoring.py` (saturation/clamp/banding). Frozen
+  value objects in `base.py`; risk/severity banded by `RiskBand` (enums).
+- **Orchestration (`app/intelligence/intelligence_service.py`):** fetches bounded graph
+  relationships/entities + the trust source list and delegates to the analyzers;
+  `overview` runs all four for the dashboard headline metrics. Computed on read — nothing
+  persisted, no run path.
+- **APIs (`routes/intelligence.py`):** `GET /intelligence/overview`, `/dependencies`,
+  `/debt`, `/incidents`, `/ownership` — VIEWER, tenant-scoped, read-only.
+- **Web (`apps/web/app/intelligence`):** Intelligence Dashboard (headline metrics +
+  incidents + ownership coverage/orphans), Dependency Risk Dashboard (risk-ranked
+  components + cycles), Technical Debt Dashboard (severity-ranked debt + reason
+  breakdown, linked to the Trust Inspector). "Intelligence" enabled in nav.
+- **Contracts:** TS mirror `intelligence.ts`.
+- **Tests:** **160 passing** (+22): dependency/debt/incident/ownership analyzers, service
+  over SQLite + in-memory graph, routes RBAC/shape/tenant. Gates: ruff · mypy strict
+  (123 files) · pytest 160/160; web lint/tsc/build green.
+
 ## Current architecture state
 
 End-to-end now spans ingestion → processing → knowledge graph: UI → API (JWT/RBAC,
@@ -171,7 +196,10 @@ Modular monolith now spanning **all three datastores in use** (PostgreSQL + Neo4
 Qdrant). Sync/processing/build/embedding paths are all queue-agnostic for a worker; trust
 is stateless/read-time (no run path). The **Engineering Assistant** sits on top,
 composing retrieval + graph + trust deterministically into evidence-backed answers and
-persisting conversations (PostgreSQL) for history + evidence review.
+persisting conversations (PostgreSQL) for history + evidence review. The **Engineering
+Intelligence** layer then reads the graph + trust on demand to produce dependency-risk,
+technical-debt, incident and ownership reports (deterministic, nothing persisted) behind
+the Intelligence / Technical Debt / Dependency Risk dashboards.
 
 ## Risks
 
@@ -215,6 +243,14 @@ persisting conversations (PostgreSQL) for history + evidence review.
   neighborhood (no multi-hop reasoning); no answer-quality evaluation harness yet. All
   are seams for an LLM-backed upgrade. Conversations have no rename/delete and `ask` runs
   synchronously in-request.
+- **Heuristic intelligence (ADR-0020).** Dependency-risk and debt-severity weights
+  (saturation ceilings, blend coefficients, freshness penalties) are fixed heuristics, not
+  learned/calibrated; reports are computed on read with no caching/materialization, so each
+  request recomputes from the graph + trust — a cached read model is the scale upgrade
+  behind the service seam. Dependency reasoning is single-edge (fan-in/out + cycles), not
+  multi-hop transitive impact; there is no trend/time-series intelligence yet. Dependency
+  and ownership coverage are only as complete as graph curation (`depends_on` + team
+  ownership must be declared/projected).
 - Carried from Phase 1: single implemented connector (GitHub); no Alembic migrations
   (dev `create_all`, tests SQLite); auth is HS256 shared-secret (JWKS/SSO login UI
   pending); default dev secrets MUST be overridden in prod.
@@ -230,13 +266,16 @@ persisting conversations (PostgreSQL) for history + evidence review.
   learned/calibrated weights, and whether to materialize/cache the trust read model.
 - Assistant upgrade path (ADR-0019): when to introduce LLM-backed answer synthesis +
   intent classification, multi-hop graph reasoning, and an answer-quality eval harness.
+- Intelligence calibration (ADR-0020): when to move from fixed heuristic risk/severity
+  weights to learned/calibrated scoring, whether to materialize/cache the intelligence
+  read model, and when to add multi-hop dependency impact + trend (time-series) analysis.
 
 ## Recommended next action
 
-Obtain phase-gate approval, then begin **Phase 7 — Engineering Intelligence**
-(dependency intelligence, technical-debt intelligence, incident intelligence, ownership
-intelligence) over the graph + trust + assistant layers, with Intelligence Dashboard /
-Technical Debt Dashboard / Dependency Risk Dashboard screens.
+Obtain phase-gate approval, then begin **Phase 8 — Agent Layer** (incident agents,
+onboarding agents, architecture agents, knowledge-maintenance agents) over the
+intelligence + assistant + graph + trust layers, with Agent Workspace / Agent Execution
+Viewer / Agent Audit Trail screens.
 
-> **Phase gate:** Phase 6 is complete and verified; **STOP for approval** before
-> Phase 7.
+> **Phase gate:** Phase 7 is complete and verified; **STOP for approval** before
+> Phase 8.

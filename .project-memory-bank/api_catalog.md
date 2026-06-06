@@ -61,6 +61,11 @@ catalog.
 | `POST /assistant/ask` | viewer | `AskRequest` | `AskResponse` | api/routes/assistant | implemented |
 | `GET /assistant/conversations` | viewer | `?limit&offset` | `ConversationListResponse` | api/routes/assistant | implemented |
 | `GET /assistant/conversations/{id}` | viewer | — | `ConversationDetailResponse` | api/routes/assistant | implemented |
+| `GET /intelligence/overview` | viewer | — | `OverviewResponse` | api/routes/intelligence | implemented |
+| `GET /intelligence/dependencies` | viewer | — | `DependencyReportResponse` | api/routes/intelligence | implemented |
+| `GET /intelligence/debt` | viewer | — | `DebtReportResponse` | api/routes/intelligence | implemented |
+| `GET /intelligence/incidents` | viewer | — | `IncidentReportResponse` | api/routes/intelligence | implemented |
+| `GET /intelligence/ownership` | viewer | — | `OwnershipReportResponse` | api/routes/intelligence | implemented |
 
 > `GET /health` is liveness (process up, no I/O). `GET /health/ready` is readiness:
 > it aggregates PostgreSQL/Neo4j/Qdrant health and returns **503** when any store is
@@ -107,4 +112,13 @@ catalog.
 > `GET /assistant/conversations{,/{id}}` power Conversation History and the conversation
 > thread / Evidence Viewer.
 
-Phase 7+ will add intelligence and agent endpoints — each added here when implemented.
+> **Intelligence (Phase 7).** Read-only and tenant-scoped; intelligence is computed on
+> read (ADR-0020) over the knowledge graph + trust, so there is no run/trigger and no
+> model provider. `GET /intelligence/overview` returns the dashboard headline metrics.
+> `GET /intelligence/dependencies` ranks components by blast-radius risk and lists
+> circular dependencies (Dependency Risk Dashboard). `GET /intelligence/debt` scores
+> low-confidence / stale / unowned documents by severity (Technical Debt Dashboard).
+> `GET /intelligence/incidents` reports incident impact + resolution; `GET
+> /intelligence/ownership` reports coverage, orphaned components and key-person load.
+
+Phase 8 will add agent endpoints — each added here when implemented.

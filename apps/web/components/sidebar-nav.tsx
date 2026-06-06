@@ -16,6 +16,7 @@ const NAV_ITEMS = [
   { label: "Search", href: "/search", enabled: true },
   { label: "Trust", href: "/trust", enabled: true },
   { label: "Assistant", href: "/assistant", enabled: true },
+  { label: "Intelligence", href: "/intelligence", enabled: true },
 ];
 
 function isActive(pathname: string, href: string): boolean {

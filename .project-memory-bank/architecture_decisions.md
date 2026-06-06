@@ -468,3 +468,36 @@ while the Evidence Viewer links each citation to the live Trust Inspector. The k
 intent classifier and extractive composer are heuristic seams for a later LLM-backed
 upgrade (synthesis quality), and graph enrichment is bounded to the single most relevant
 matched entity (deeper multi-hop reasoning is deferred). No new datastore is introduced.
+
+
+---
+
+## ADR-0020 — Deterministic Engineering Intelligence over the graph + trust
+
+**Status:** Accepted · 2026-06-06 (Phase 7)
+
+**Context.** Phase 7 must turn the accumulated knowledge into *intelligence* —
+dependency risk, technical debt, incident impact and ownership coverage — with visible,
+explainable signals and without introducing an external model provider in this increment
+(consistent with ADR-0010/0013/0014/0017/0019). The inputs already exist: the knowledge
+graph (Phase 3) and the trust read model (Phase 5).
+
+**Decision.** Intelligence is a **read-only, deterministic composition** of the existing
+layers — the same posture as Trust (ADR-0017): everything is computed on read, nothing is
+persisted, and **no new datastore** is added. ``app/intelligence/`` holds one pure module
+per concern — ``dependency`` (fan-in/out, a blast-radius-weighted risk score, and
+Tarjan-SCC cycle detection over ``depends_on`` edges), ``debt`` (severity from
+low-confidence / stale / unowned trust items), ``incident`` (impact + resolution over
+``impacts``/``resolved`` edges), ``ownership`` (coverage, orphaned components, key-person
+load over ``owns``/``modified`` edges) — plus a shared ``scoring`` helper and
+``IntelligenceService`` that fetches bounded inputs and delegates. Risk and severity are
+banded with a single ``RiskBand`` (high/medium/low). All endpoints require VIEWER and are
+read-only (no trigger).
+
+**Consequences.** Reports are reproducible, offline-testable and trace directly to graph
+edges and trust signals — coverage gaps are surfaced (e.g. unowned components), never
+fabricated. The heuristic weights (risk/severity blends, saturation ceilings) are fixed
+seams for later learned/calibrated scoring, and analysis is bounded to a single request
+(no caching/materialization yet) — a scale upgrade behind the service seam. Ownership and
+dependency intelligence are only as complete as graph curation: ``depends_on`` edges and
+team ownership must be declared/projected for those views to populate.

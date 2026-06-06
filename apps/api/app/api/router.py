@@ -16,6 +16,7 @@ from app.api.routes import (
     graph,
     graph_entities,
     health,
+    intelligence,
     processing,
     search,
     sync,
@@ -34,3 +35,4 @@ api_router.include_router(embeddings.router)
 api_router.include_router(search.router)
 api_router.include_router(trust.router)
 api_router.include_router(assistant.router)
+api_router.include_router(intelligence.router)
