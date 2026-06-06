@@ -24,9 +24,9 @@ It is designed to eventually answer, with visible trust:
 
 | | |
 |---|---|
-| **Current phase** | Phase 0 — Project Foundation (code-complete, at phase gate) |
-| **Delivered** | Memory bank + ADRs, **and** the code walking-skeleton (API + Web + infra + CI) |
-| **Next phase** | Phase 1 — Knowledge Ingestion Layer (awaiting gate approval) |
+| **Current phase** | Phase 1 — Knowledge Ingestion Layer (complete, at phase gate) |
+| **Delivered** | Phase 0 foundation **and** Phase 1 ingestion: connectors + incremental sync + change tracking, JWT auth, persisted audit, ingestion UI |
+| **Next phase** | Phase 2 — Knowledge Processing Layer (awaiting gate approval) |
 
 The authoritative, always-current status lives in
 [`.project-memory-bank/implementation_status.md`](.project-memory-bank/implementation_status.md).
@@ -57,8 +57,9 @@ truth. Before any work, read in order:
 ```
 .
 ├── apps/
-│   ├── api/                 # FastAPI backend (health/readiness, RBAC + audit scaffold)
-│   └── web/                 # Next.js frontend (dark-mode App Shell + Overview)
+│   ├── api/                 # FastAPI backend (health, connectors, sync, documents;
+│   │                        #   models/repositories/connectors/services; JWT + audit)
+│   └── web/                 # Next.js frontend (Overview + Connectors/Sync ingestion UI)
 ├── packages/
 │   └── contracts/           # Shared TS API contract types (mirror Pydantic schemas)
 ├── infra/                   # docker-compose: PostgreSQL + Neo4j + Qdrant

@@ -8,31 +8,48 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started
 
 ---
 
-## Phase 0 — Project Foundation 🟡
+## Phase 0 — Project Foundation ✅
 
 Deliver: repository structure, memory bank, ADR framework, coding standards, CI/CD,
 security baseline, design system.
 
 Increments:
 - ✅ **Docs increment** — memory bank + foundational ADRs + standards (this set).
-- ✅ **Code walking-skeleton** — monorepo (`apps/api`, `apps/web`, `packages/`,
-  `infra/`), FastAPI `GET /health` + `/health/ready` (checks PG/Neo4j/Qdrant),
-  Next.js dark-mode App Shell + Overview consuming the API, docker-compose for the
-  three stores, CI (ruff/mypy/pytest · lint/typecheck/build · secret+dependency
-  scan), security scaffolding (RBAC roles + `require_role`, audit middleware,
-  request correlation, env-based secrets). All quality gates green.
+- ✅ **Code walking-skeleton** — monorepo, FastAPI health/readiness, Next.js
+  App Shell + Overview, docker-compose, CI, security scaffolding. All gates green.
 
-**🚦 Phase gate — awaiting approval to proceed to Phase 1.**
+**🚦 Phase gate — approved; Phase 1 delivered below.**
 
 ---
 
-## Phase 1 — Knowledge Ingestion Layer ⬜
+## Phase 1 — Knowledge Ingestion Layer 🟡
 
 Sources: GitHub, GitLab, Jira, Confluence, Slack, Notion.
 Capabilities: incremental sync, metadata extraction, change tracking.
 UI: Connector Catalog, Connector Details, Sync Dashboard, Sync Logs.
 
-**STOP — wait for approval.**
+Delivered:
+- ✅ **Persistence** — PostgreSQL ORM (Connector, SyncRun, SyncEvent, Document,
+  AuditEvent), tenant-scoped, async session layer.
+- ✅ **Connector framework** — `Connector` protocol, 6-source catalog, registry;
+  **GitHub connector** with incremental fetch (cursor/`since`). Remaining 5 sources
+  registered as catalog entries (planned).
+- ✅ **Sync engine** — content-hash change tracking (created/updated/unchanged/
+  deleted), counters, log events, cursor advancement, failure capture (ADR-0009).
+- ✅ **APIs** — connector catalog/CRUD/trigger-sync, sync runs/events, documents
+  (api_catalog.md); RBAC-enforced + tenant-scoped.
+- ✅ **Security** — JWT bearer auth as the production boundary, dev header fallback
+  gated to non-prod; connector secrets encrypted at rest; **PostgreSQL-backed audit
+  events** (ADR-0008).
+- ✅ **UI** — Connector Catalog, Connector Details, Sync Dashboard, Sync Logs
+  (server components + server actions).
+- ✅ **Tests** — 30 passing (repos/sync/services/routes/auth/connector/crypto);
+  ruff · mypy strict · pytest green; web lint/typecheck/build green.
+
+Deferred to later (tracked in implementation_status.md): connectors for the other 5
+sources, a durable background sync worker/queue, Alembic migrations, JWKS/SSO login UI.
+
+**🚦 Phase gate — awaiting approval to proceed to Phase 2.**
 
 ---
 

@@ -6,83 +6,85 @@
 
 ## Current phase
 
-**Phase 0 — Project Foundation.** Both increments complete; **at the phase gate**
-awaiting approval to start Phase 1.
+**Phase 1 — Knowledge Ingestion Layer.** Complete and verified; **at the phase gate**
+awaiting approval to start Phase 2. Phase 0 is done.
 
 ## Completed work
 
-### Docs increment ✅
-- Memory Bank (`.project-memory-bank/`) established as the source of truth (16 files).
-- Foundational ADRs ([`architecture_decisions.md`](architecture_decisions.md)):
-  ADR-0001…0006 (memory-bank-first, FastAPI, Next.js, PG+Neo4j+Qdrant, monorepo,
-  security baseline).
+### Phase 0 — Project Foundation ✅
+Memory bank + ADRs (0001–0007); code walking-skeleton (FastAPI health/readiness over
+PG/Neo4j/Qdrant, Next.js dark App Shell + Overview, shared contracts, docker-compose,
+CI, security scaffolding). All gates green.
 
-### Code walking-skeleton ✅
-Monorepo per ADR-0005: `apps/api`, `apps/web`, `packages/`, `infra/`, `.github/`.
+### Phase 1 — Knowledge Ingestion Layer ✅
 
-- **API (`apps/api`, FastAPI — ADR-0002):**
-  - `core/`: env-based `Settings` (pydantic-settings), JSON structured logging with
-    request-id correlation, RBAC scaffolding (`Role`, `Principal`, `require_role`).
-  - `core/db/`: `PostgresStore`, `Neo4jStore`, `QdrantStore` (each `connect`/`close`/
-    `health_check`) behind a `DataStore` protocol + `DataStores` registry (R1 store
-    abstraction).
-  - `api/routes/health.py`: `GET /health` (liveness) and `GET /health/ready`
-    (readiness; 503 when any store degraded).
-  - `middleware/`: request correlation + audit-log scaffold (mutations).
-  - `main.py`: app factory + lifespan wiring; CORS.
-  - Tests: 9 passing (health liveness, readiness 200/503, request-id, RBAC hierarchy).
-  - Gates green: **ruff clean · mypy strict clean (22 files) · pytest 9/9**.
-- **Web (`apps/web`, Next.js App Router — ADR-0003):** dark-mode-first App Shell
-  (sidebar + header), Overview screen (server component) that fetches
-  `GET /health/ready` and renders backend + datastore health via a status badge
-  (trust-UX precursor); Tailwind tokenized theme; typed API client using shared
-  contracts. Gates green: **eslint clean · tsc strict clean · next build succeeds**.
-- **`packages/contracts`:** type-only TS mirror of the API Pydantic schemas (R2
-  mitigation), consumed via tsconfig path alias + `transpilePackages`.
-- **`infra/docker-compose.yml`:** PostgreSQL 16 + Neo4j 5 + Qdrant for local dev.
-- **CI (`.github/workflows/ci.yml`):** api gate, web gate, and security scanning
-  (gitleaks secret scan + dependency review); least-privilege token.
-- **ADR-0007:** monorepo tooling (per-app native tooling; type-only shared package).
-- **Security posture (scaffold, ADR-0006):** RBAC roles + `require_role`, tenant-scoped
-  `Principal`, audit middleware, request correlation, secrets via env (`.env.example`,
-  never committed), non-root API container, CI secret/dependency scanning.
+- **Persistence (PostgreSQL, system of record):** ORM models `Connector`, `SyncRun`,
+  `SyncEvent`, `Document`, `AuditEvent` (`app/models/`), all tenant-scoped; portable
+  types so the same models run on SQLite for tests. Async session factory on
+  `PostgresStore`; dev schema bootstrap in lifespan (`auto_create_schema`).
+- **Repository layer (`app/repositories/`):** tenant-scoped data access for
+  connectors, documents, sync runs/events, audit.
+- **Connector framework (`app/connectors/`):** `Connector` protocol + `RawDocument`/
+  `FetchResult`, a 6-source **catalog**, and a **registry** that builds a live
+  connector from stored config. **GitHub connector** implemented (issues, incremental
+  via `since`, PR-skip, pagination cap). Other 5 sources are catalog entries (planned).
+- **Sync engine (`app/services/sync_service.py`):** drives a connector, reconciles via
+  SHA-256 content hash (created/updated/unchanged/deleted), records counters + log
+  events, advances the cursor, and captures failures on the run (ADR-0009).
+- **Services:** `ConnectorService` (catalog validation + secret encryption),
+  `AuditService` (persisted audit).
+- **APIs (`app/api/routes/`):** connectors (catalog/list/create/get/sync), sync
+  (runs/run/events), documents — all RBAC-enforced + tenant-scoped (api_catalog.md).
+- **Security (ADR-0008):** JWT bearer verification is the production boundary
+  (`get_principal`); dev header fallback gated to non-production; connector secrets
+  encrypted at rest (Fernet `SecretBox`); secrets write-only over the API;
+  **PostgreSQL-backed audit events** replace the Phase 0 log-only scaffold.
+- **Web (`apps/web`):** Connector Catalog, Connector Details, Sync Dashboard, Sync
+  Logs — server components reading the typed API client, mutations via server actions
+  (create connector, run sync); active-route sidebar nav; reusable `Badge`.
+- **Contracts (`packages/contracts`):** TS mirrors for connector/sync/document schemas.
+- **Tests:** 30 passing — crypto, GitHub connector (httpx mock), sync engine + change
+  tracking (SQLite), connector/sync/document routes, RBAC + tenant isolation, JWT auth.
+  Gates green: **ruff · mypy strict (50 files) · pytest 30/30**; web **lint · tsc ·
+  next build**.
 
 ## Current architecture state
 
-Runnable thin slice end-to-end: web Overview → API `/health/ready` → 3 datastore
-probes. Modular monolith; internal modules map to roadmap layers
-([`system_architecture.md`](system_architecture.md)). No domain entities/connectors
-yet (Phase 1+).
+End-to-end ingestion works: UI → API (JWT/RBAC, tenant-scoped) → SyncService →
+GitHub connector → PostgreSQL documents + sync runs/events + audit. Modular monolith;
+the sync path is queue-agnostic for a future worker.
 
 ## Risks
 
-- **R1 — Operational complexity (ADR-0004):** three datastores. *Mitigation in place:*
-  docker-compose for local dev; per-store client + registry abstraction; readiness
-  reports each store independently.
-- **R2 — Two-language stack:** *Mitigation in place:* shared type-only
-  `packages/contracts` mirrors the Pydantic schemas; parity kept by review.
+- **R1 — Operational complexity (3 datastores):** mitigated (registry abstraction,
+  readiness per store). Phase 1 uses PostgreSQL only; Neo4j/Qdrant unused until 2/3.
+- **R2 — Two-language stack:** mitigated (shared `packages/contracts`; parity by review).
 
 ## Technical debt
 
-- **DEV-only auth resolver:** `get_principal` derives identity from request headers to
-  exercise RBAC before OAuth/SSO. **Not a security boundary**; replace in Phase 1.
-- **Audit log is log-only:** structured audit lines, not yet a persisted/tamper-evident
-  store (PostgreSQL-backed audit events land in Phase 1).
-- **Contract parity is by convention** (no codegen yet) — acceptable at current size.
+- **Single implemented connector (GitHub).** GitLab/Jira/Confluence/Slack/Notion are
+  catalog entries only; add factories in `app/connectors/registry.py`.
+- **Synchronous sync execution (ADR-0009).** No durable background worker/queue yet;
+  large backfills are bounded per request.
+- **No Alembic migrations yet.** Schema is created via `create_all` (dev). Add Alembic
+  before first production deploy. Tests use SQLite `create_all`.
+- **Auth completeness.** HS256 with a shared secret; JWKS/RS256 rotation, token
+  issuance/login UI, and full SSO wiring are pending. Default dev secrets
+  (`EKIP_JWT_SECRET`, `EKIP_SECRET_KEY`) **must** be overridden via env in prod.
+- **Deletion detection** relies on connector-provided `deleted_ids` (GitHub issues are
+  closed, not deleted) — full reconciliation deferred.
 
 ## Pending decisions
 
-- Auth provider for OAuth/SSO (Phase 1).
+- OAuth/OIDC provider for production token issuance + login UI (Phase 1 follow-up).
+- Background job runner (Celery/Arq/RQ) when sync volume warrants (revisits ADR-0009).
 - Embedding model + provider for Qdrant (Phase 2/4).
-- Whether to introduce Turborepo/uv workspaces if build coordination grows (revisits
-  ADR-0007).
 
 ## Recommended next action
 
-Obtain phase-gate approval, then begin **Phase 1 — Knowledge Ingestion Layer**
-(connectors, incremental sync, metadata, change tracking + Connector/Sync UI), driven
-by the ADRs, [`coding_standards.md`](coding_standards.md), and
-[`testing_strategy.md`](testing_strategy.md).
+Obtain phase-gate approval, then begin **Phase 2 — Knowledge Processing Layer**
+(parse, chunk, classify, enrich, summarize) over the ingested `Document`s, driven by
+the ADRs, `coding_standards.md`, and `testing_strategy.md`.
 
-> **Phase gate:** Phase 0 is code-complete and verified; **STOP for approval** before
-> Phase 1.
+> **Phase gate:** Phase 1 is complete and verified; **STOP for approval** before
+> Phase 2.

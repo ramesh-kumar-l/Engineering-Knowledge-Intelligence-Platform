@@ -38,9 +38,29 @@ class Settings(BaseSettings):
     # CORS origins for the web app, comma-separated in the env var.
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
 
+    # Auth (ADR-0008). JWT bearer verification is the production security boundary.
+    # Secrets MUST be injected via env in staging/production (defaults are dev-only).
+    jwt_secret: str = "dev-insecure-jwt-secret-change-me"
+    jwt_algorithm: str = "HS256"
+    jwt_audience: str | None = None
+    jwt_issuer: str | None = None
+    # Dev-only header principal fallback; forced off in production regardless of value.
+    dev_auth_enabled: bool = True
+
+    # Symmetric key for encrypting connector secrets at rest (ADR-0008). Override in env.
+    secret_key: str = "dev-insecure-secret-key-change-me"
+
+    # Auto-create ORM schema on startup (dev convenience). Production uses migrations.
+    auto_create_schema: bool = True
+
     @property
     def is_production(self) -> bool:
         return self.env == "production"
+
+    @property
+    def header_auth_allowed(self) -> bool:
+        """Dev header principal is only honored outside production."""
+        return self.dev_auth_enabled and not self.is_production
 
 
 @lru_cache(maxsize=1)

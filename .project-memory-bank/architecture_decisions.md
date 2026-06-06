@@ -154,3 +154,53 @@ again.
 cross-app task caching/orchestration yet; if build coordination becomes painful we
 revisit with Turborepo/uv workspaces (superseding ADR). Contract parity between Python
 and TS is maintained by convention + review until a generator is introduced.
+
+---
+
+## ADR-0008 — Authentication (JWT bearer) & secret encryption at rest
+
+**Status:** Accepted · 2026-06-06 (Phase 1)
+
+**Context.** Phase 0 shipped a DEV-only header principal resolver, explicitly not a
+security boundary. Phase 1 exposes tenant data through real APIs, so it needs an
+enforceable auth boundary (security_requirements.md: OAuth/SSO at Phase 1) and
+encrypted connector credentials.
+
+**Options.**
+1. Full OAuth/OIDC server + session management built in-house now.
+2. Verify signed **JWT bearer tokens** issued by any OAuth/OIDC IdP; keep a dev
+   header fallback gated to non-production.
+3. Defer auth again.
+
+**Decision.** Option 2. ``get_principal`` verifies a ``Bearer`` JWT (PyJWT) and
+derives the tenant-scoped ``Principal`` from claims (``sub``, ``tenant_id``,
+``role``); signature/audience/issuer/expiry are validated. The dev header fallback is
+honored only when ``header_auth_allowed`` (``dev_auth_enabled and not production``).
+Connector credentials are encrypted at rest with Fernet (``SecretBox``), key derived
+from ``EKIP_SECRET_KEY``; secrets are write-only over the API.
+
+**Consequences.** A real, IdP-agnostic security boundary in production without
+building an IdP; any provider issuing JWTs integrates. JWKS/RS256 rotation and a
+full login UI are natural extensions. Default dev secrets must be overridden via env
+in staging/production (documented as acceptance criteria + tech debt).
+
+---
+
+## ADR-0009 — Synchronous in-request sync execution (no job queue yet)
+
+**Status:** Accepted · 2026-06-06 (Phase 1)
+
+**Context.** Ingestion syncs call external APIs and write many rows. A durable
+background worker/queue is the eventual target, but adding one now (broker, workers,
+deployment) is significant infrastructure.
+
+**Options.** Background worker/queue (Celery/RQ/Arq) now · Run the sync synchronously
+inside the trigger request, behind a service seam · Fire-and-forget asyncio task.
+
+**Decision.** Run ``SyncService`` synchronously within ``POST /connectors/{id}/sync``.
+A single GitHub sync is bounded (``_MAX_PAGES``) and the cursor resumes the rest. The
+service is queue-agnostic, so a worker can later invoke the exact same code path.
+
+**Consequences.** Simplest correct option; fully testable without infrastructure.
+Long syncs are bounded per request; large backfills need the worker (deferred,
+tracked in implementation_status.md). No re-split of the modular monolith required.

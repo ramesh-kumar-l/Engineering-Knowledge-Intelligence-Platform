@@ -8,10 +8,10 @@ Design language: [`ui_design_system.md`](ui_design_system.md).
 |---|---|---|---|
 | App Shell (nav, theme, layout) | 0 (code) | foundation for all | ✅ |
 | Overview (system status) | 0 (code) | foundation for all | ✅ |
-| Connector Catalog | 1 | J7 | ⬜ |
-| Connector Details | 1 | J7 | ⬜ |
-| Sync Dashboard | 1 | J7 | ⬜ |
-| Sync Logs | 1 | J7 | ⬜ |
+| Connector Catalog | 1 | J7 | ✅ |
+| Connector Details | 1 | J7 | ✅ |
+| Sync Dashboard | 1 | J7 | ✅ |
+| Sync Logs | 1 | J7 | ✅ |
 | Processing Dashboard | 2 | (ops support for J1–J6) | ⬜ |
 | Chunk Statistics | 2 | (ops) | ⬜ |
 | Parsing Explorer | 2 | (ops) | ⬜ |

@@ -6,3 +6,6 @@
  * mitigation from implementation_status.md (preventing Python/TS contract drift).
  */
 export type * from "./health";
+export type * from "./connectors";
+export type * from "./sync";
+export type * from "./documents";

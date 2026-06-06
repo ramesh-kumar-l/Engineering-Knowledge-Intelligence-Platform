@@ -17,6 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app import __version__
 from app.api.router import api_router
 from app.core.config import Settings, get_settings
+from app.core.crypto import SecretBox
 from app.core.db import DataStores
 from app.core.logging import configure_logging
 from app.middleware.audit import AuditLogMiddleware
@@ -30,6 +31,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     stores = DataStores(settings)
     app.state.datastores = stores
     await stores.connect()
+    if settings.auto_create_schema:
+        # Dev convenience: create ORM tables. Production manages schema via migrations.
+        try:
+            await stores.postgres.create_all()
+        except Exception:  # noqa: BLE001 - DB may be unavailable; readiness reports it
+            logging.getLogger("ekip").warning(
+                "schema_bootstrap_skipped", extra={"extra": {"reason": "postgres unavailable"}}
+            )
     logging.getLogger("ekip").info(
         "startup", extra={"extra": {"env": settings.env, "version": __version__}}
     )
@@ -51,6 +60,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     app.state.settings = settings
+    app.state.secret_box = SecretBox(settings.secret_key)
 
     # Middleware order: outermost first. Correlation id wraps audit so audit logs
     # carry the request id.
