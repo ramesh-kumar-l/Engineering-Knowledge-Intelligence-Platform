@@ -7,6 +7,23 @@ import type {
   Document,
   DocumentListResponse,
   DocumentProcessingDetail,
+  EmbeddingEvent,
+  EmbeddingEventListResponse,
+  EmbeddingRun,
+  EmbeddingRunListResponse,
+  EmbeddingStatsResponse,
+  EntityCreateRequest,
+  FreshnessResponse,
+  GraphBuildEvent,
+  GraphBuildEventListResponse,
+  GraphBuildRun,
+  GraphBuildRunListResponse,
+  GraphEntity,
+  GraphEntityListResponse,
+  GraphNeighborhoodResponse,
+  GraphRelationship,
+  GraphRelationshipListResponse,
+  GraphStatsResponse,
   ProcessedDocument,
   ProcessedDocumentListResponse,
   ProcessingEvent,
@@ -14,7 +31,14 @@ import type {
   ProcessingRun,
   ProcessingRunListResponse,
   ReadinessResponse,
+  RelationshipCreateRequest,
+  RelationshipType,
+  SearchMode,
+  SearchResponse,
+  SourceListResponse,
+  SourceTrustItem,
   SourceTypeInfo,
+  TrustProfileResponse,
   SyncEvent,
   SyncEventListResponse,
   SyncRun,
@@ -163,4 +187,123 @@ export async function fetchDocumentProcessing(
 
 export async function triggerProcessing(): Promise<MutationResult> {
   return postJson("/processing/runs");
+}
+
+// --- Phase 3: Knowledge Graph ---
+
+export async function fetchGraphStats(): Promise<GraphStatsResponse | null> {
+  return getJson<GraphStatsResponse>("/graph/stats");
+}
+
+export async function fetchGraphEntities(
+  kind?: string,
+  search?: string,
+): Promise<GraphEntity[]> {
+  const params = new URLSearchParams();
+  if (kind) params.set("kind", kind);
+  if (search) params.set("search", search);
+  const query = params.toString() ? `?${params.toString()}` : "";
+  return (await getJson<GraphEntityListResponse>(`/graph/entities${query}`))?.entities ?? [];
+}
+
+export async function fetchGraphEntity(
+  key: string,
+): Promise<GraphNeighborhoodResponse | null> {
+  return getJson<GraphNeighborhoodResponse>(
+    `/graph/entity?key=${encodeURIComponent(key)}`,
+  );
+}
+
+export async function fetchGraphRelationships(
+  type?: RelationshipType,
+): Promise<GraphRelationship[]> {
+  const query = type ? `?type=${type}` : "";
+  return (
+    (await getJson<GraphRelationshipListResponse>(`/graph/relationships${query}`))
+      ?.relationships ?? []
+  );
+}
+
+export async function fetchGraphRuns(): Promise<GraphBuildRun[]> {
+  return (await getJson<GraphBuildRunListResponse>("/graph/build/runs"))?.runs ?? [];
+}
+
+export async function fetchGraphRun(id: string): Promise<GraphBuildRun | null> {
+  return getJson<GraphBuildRun>(`/graph/build/runs/${id}`);
+}
+
+export async function fetchGraphRunEvents(runId: string): Promise<GraphBuildEvent[]> {
+  return (
+    (await getJson<GraphBuildEventListResponse>(`/graph/build/runs/${runId}/events`))
+      ?.events ?? []
+  );
+}
+
+export async function triggerGraphBuild(): Promise<MutationResult> {
+  return postJson("/graph/build");
+}
+
+export async function createGraphEntity(
+  input: EntityCreateRequest,
+): Promise<MutationResult> {
+  return postJson("/graph/entities", input);
+}
+
+export async function createGraphRelationship(
+  input: RelationshipCreateRequest,
+): Promise<MutationResult> {
+  return postJson("/graph/relationships", input);
+}
+
+// --- Phase 4: Retrieval (search + embeddings) ---
+
+export async function fetchSearch(
+  query: string,
+  mode: SearchMode = "hybrid",
+): Promise<SearchResponse | null> {
+  if (!query.trim()) return null;
+  const params = new URLSearchParams({ q: query, mode });
+  return getJson<SearchResponse>(`/search?${params.toString()}`);
+}
+
+export async function fetchEmbeddingStats(): Promise<EmbeddingStatsResponse | null> {
+  return getJson<EmbeddingStatsResponse>("/embeddings/stats");
+}
+
+export async function fetchEmbeddingRuns(): Promise<EmbeddingRun[]> {
+  return (await getJson<EmbeddingRunListResponse>("/embeddings/runs"))?.runs ?? [];
+}
+
+export async function fetchEmbeddingRun(id: string): Promise<EmbeddingRun | null> {
+  return getJson<EmbeddingRun>(`/embeddings/runs/${id}`);
+}
+
+export async function fetchEmbeddingRunEvents(runId: string): Promise<EmbeddingEvent[]> {
+  return (
+    (await getJson<EmbeddingEventListResponse>(`/embeddings/runs/${runId}/events`))
+      ?.events ?? []
+  );
+}
+
+export async function triggerEmbedding(): Promise<MutationResult> {
+  return postJson("/embeddings/runs");
+}
+
+// --- Phase 5: Trust ---
+
+export async function fetchTrustSources(
+  sourceType?: string,
+): Promise<SourceTrustItem[]> {
+  const query = sourceType ? `?source_type=${sourceType}` : "";
+  return (await getJson<SourceListResponse>(`/trust/sources${query}`))?.sources ?? [];
+}
+
+export async function fetchFreshness(): Promise<FreshnessResponse | null> {
+  return getJson<FreshnessResponse>("/trust/freshness");
+}
+
+export async function fetchTrustProfile(
+  documentId: string,
+): Promise<TrustProfileResponse | null> {
+  return getJson<TrustProfileResponse>(`/trust/documents/${documentId}`);
 }

@@ -79,36 +79,111 @@ Deferred to later (tracked in implementation_status.md): LLM-backed classificati
 summarization, embedding chunks into Qdrant (Retrieval), background processing worker,
 richer per-source parsers, language detection beyond a coarse heuristic.
 
-**🚦 Phase gate — awaiting approval to proceed to Phase 3.**
+**🚦 Phase gate — approved; Phase 3 delivered below.**
 
 ---
 
-## Phase 3 — Knowledge Graph Layer ⬜
+## Phase 3 — Knowledge Graph Layer ✅
 
 Entities: Engineer, Team, Repository, Service, API, Incident, ADR, Document.
 Relationships: owns, depends_on, modified, impacts, resolved.
 UI: Knowledge Explorer, Service Explorer, Team Explorer, Dependency Graph.
 
-**STOP — wait for approval.**
+Delivered:
+- ✅ **Graph store (Neo4j)** — ``GraphStore`` protocol with a Cypher-backed
+  ``Neo4jGraphStore`` (single ``:Entity`` label + typed edges, tenant-scoped uniqueness)
+  and an ``InMemoryGraphStore`` for offline tests (ADR-0012). Neo4j is now in use.
+- ✅ **Deterministic projection** — ``app/graph/builder.py`` derives Repository/Team/
+  Engineer/Document/Incident/ADR entities and owns/modified/impacts/resolved edges from
+  connectors + documents + enrichment; idempotent upserts (ADR-0013).
+- ✅ **Curation** — editor-only ``POST /graph/entities`` + ``/graph/relationships``
+  declare Services/APIs and ``depends_on`` edges (audited), auto-creating endpoints.
+- ✅ **Build engine** — ``GraphService.build`` projects synchronously and records a
+  ``GraphBuildRun`` + events (ADR-0009); failures captured, not raised.
+- ✅ **APIs** — build/stats/runs/events + entities/entity-neighborhood/relationships +
+  curation (api_catalog.md); RBAC-enforced + tenant-scoped.
+- ✅ **UI** — Knowledge Explorer, Entity Detail, Service Explorer, Team Explorer,
+  Dependency Graph (+ add-dependency form), Graph Build Jobs.
+- ✅ **Tests** — 71 passing (builder projection, in-memory store, build/curation service,
+  routes/RBAC/tenant/404); ruff · mypy strict (81 files) · pytest green; web
+  lint/typecheck/build green.
+
+Deferred to later (tracked in implementation_status.md): LLM/NER entity extraction for
+richer auto-derived edges (incl. auto ``depends_on``), graph-backed retrieval (Phase 4),
+a background build worker, and Neo4j RS-level migrations/indices beyond the key
+constraint.
+
+**🚦 Phase gate — approved; Phase 4 delivered below.**
 
 ---
 
-## Phase 4 — Retrieval Layer ⬜
+## Phase 4 — Retrieval Layer ✅
 
 Capabilities: keyword retrieval, vector retrieval, graph retrieval, hybrid ranking.
 UI: Global Search, Advanced Search, Search Explorer.
 
-**STOP — wait for approval.**
+Delivered:
+- ✅ **Embeddings** — a deterministic ``HashingEmbedder`` behind an ``Embedder`` protocol
+  (signed feature hashing → unit vectors; no model provider, offline; ADR-0014).
+- ✅ **Vector store** — ``VectorStore`` protocol with a ``QdrantVectorStore`` (one
+  collection, tenant_id payload filter) and an ``InMemoryVectorStore`` for offline tests
+  (ADR-0015). Qdrant is now in use.
+- ✅ **Embedding engine** — ``EmbeddingService`` embeds processed chunks synchronously
+  (ADR-0009), recording an ``EmbeddingRun``/``Event`` + a per-document staleness ledger
+  (``DocumentEmbeddingState``) so re-runs embed only changed documents.
+- ✅ **Hybrid search** — keyword (portable ``LIKE`` candidates, deterministic ranking) +
+  vector retrieval fused by reciprocal rank (ADR-0016), plus a knowledge-graph entity
+  facet; ``mode`` = keyword/vector/hybrid.
+- ✅ **APIs** — `POST /embeddings/runs`, embedding stats/runs/events, `GET /search`
+  (api_catalog.md); RBAC-enforced + tenant-scoped; embedding runs audited.
+- ✅ **UI** — Global Search, Advanced Search, Search Explorer (index stats + embed action
+  + recent runs), Embedding Jobs (run detail + logs). "Search" enabled in nav.
+- ✅ **Tests** — 98 passing (embedder, fusion, keyword, in-memory vector store, embedding
+  service staleness/force, hybrid search, search/embedding routes RBAC/404/tenant);
+  ruff · mypy strict (96 files) · pytest green; web lint/typecheck/build green.
+
+Deferred to later (tracked in implementation_status.md): model-backed embeddings, a
+background embedding worker, PostgreSQL full-text (``tsvector``/GIN) for keyword recall at
+scale, learned/weighted hybrid ranking, and re-ranking.
+
+**🚦 Phase gate — approved; Phase 5 delivered below.**
 
 ---
 
-## Phase 5 — Trust Layer ⬜
+## Phase 5 — Trust Layer ✅
 
 Capabilities: confidence scoring, freshness tracking, source attribution, ownership
 validation.
 UI: Trust Inspector, Source Explorer, Freshness Dashboard.
 
-**STOP — wait for approval.**
+Delivered:
+- ✅ **Deterministic scoring** — pure ``app/trust/scoring.py``: age-based freshness
+  (score + band), a five-signal weighted confidence (freshness, ownership, processed,
+  embedded, richness) with a per-signal contribution breakdown, and confidence bands.
+  No models; computed **on read**, nothing persisted (ADR-0017).
+- ✅ **Trust read model** — ``TrustRepository`` joins each document to its processing
+  (``DocumentEnrichment``) and embedding (``DocumentEmbeddingState``) state in one
+  tenant-scoped query; outer joins keep coverage gaps visible (lower confidence).
+- ✅ **Ownership from the graph** — owners are engineers with a ``modified`` edge into a
+  document node, read from the ``GraphStore``; absence is reported as *ownership
+  unknown*, never guessed (ADR-0018).
+- ✅ **Trust engine** — ``TrustService`` assembles a per-document profile (confidence,
+  freshness, source provenance, owners, supporting excerpts), a Source Explorer list,
+  and a corpus Freshness summary.
+- ✅ **APIs** — `GET /trust/documents/{id}`, `/trust/sources`, `/trust/freshness`
+  (api_catalog.md); RBAC-enforced + tenant-scoped; read-only (no trigger).
+- ✅ **UI** — Trust Inspector (why-this-score breakdown, source, owners, evidence),
+  Source Explorer (provenance + trust bands), Freshness Dashboard (distribution +
+  needs-attention). "Trust" enabled in nav.
+- ✅ **Tests** — 114 passing (+16: pure scoring, service profile/sources/freshness +
+  tenant isolation, routes RBAC/404/422); ruff · mypy strict (103 files) · pytest
+  green; web lint/typecheck/build green.
+
+Deferred to later (tracked in implementation_status.md): learned/calibrated confidence
+weights, a cached/materialized trust read model for large corpora, richer ownership
+(CODEOWNERS / team-of-repo inheritance), and trust observability metrics over time.
+
+**🚦 Phase gate — awaiting approval to proceed to Phase 6.**
 
 ---
 

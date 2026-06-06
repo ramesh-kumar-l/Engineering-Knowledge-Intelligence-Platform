@@ -11,11 +11,14 @@ from fastapi import APIRouter
 from app.api.routes import (
     connectors,
     documents,
+    embeddings,
     graph,
     graph_entities,
     health,
     processing,
+    search,
     sync,
+    trust,
 )
 
 api_router = APIRouter()
@@ -26,3 +29,6 @@ api_router.include_router(documents.router)
 api_router.include_router(processing.router)
 api_router.include_router(graph.router)
 api_router.include_router(graph_entities.router)
+api_router.include_router(embeddings.router)
+api_router.include_router(search.router)
+api_router.include_router(trust.router)

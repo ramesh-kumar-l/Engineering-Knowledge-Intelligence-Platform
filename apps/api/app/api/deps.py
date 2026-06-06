@@ -21,15 +21,26 @@ from app.repositories.audit import AuditRepository
 from app.repositories.chunks import ChunkRepository
 from app.repositories.connectors import ConnectorRepository
 from app.repositories.documents import DocumentRepository
+from app.repositories.embedding import EmbeddingRepository
 from app.repositories.enrichment import EnrichmentRepository
 from app.repositories.graph_build import GraphBuildRepository
 from app.repositories.processing import ProcessingRepository
 from app.repositories.sync import SyncRepository
+from app.repositories.trust import TrustRepository
+from app.retrieval.embedder import Embedder, HashingEmbedder
+from app.retrieval.embedding_service import EmbeddingService
+from app.retrieval.qdrant_store import QdrantVectorStore
+from app.retrieval.search_service import SearchService
+from app.retrieval.vector_store import VectorStore
 from app.services.audit_service import AuditService
 from app.services.connector_service import ConnectorService
 from app.services.graph_service import GraphService
 from app.services.processing_service import ProcessingService
 from app.services.sync_service import SyncService
+from app.trust.trust_service import TrustService
+
+# Process-wide deterministic embedder (ADR-0014); stateless, safe to share.
+_EMBEDDER = HashingEmbedder()
 
 
 def get_datastores(request: Request) -> DataStores:
@@ -125,4 +136,64 @@ def get_graph_service(
         ConnectorRepository(session),
         DocumentRepository(session),
         store,
+    )
+
+
+def get_embedder() -> Embedder:
+    """The deterministic embedder (ADR-0014)."""
+    return _EMBEDDER
+
+
+def get_vector_store(request: Request) -> VectorStore:
+    """The chunk vector store (Qdrant in production; ADR-0015)."""
+    stores: DataStores = request.app.state.datastores
+    return QdrantVectorStore(stores.qdrant)
+
+
+def get_embedding_repo(
+    session: AsyncSession = Depends(get_session),
+) -> EmbeddingRepository:
+    return EmbeddingRepository(session)
+
+
+def get_embedding_service(
+    session: AsyncSession = Depends(get_session),
+    embedder: Embedder = Depends(get_embedder),
+    store: VectorStore = Depends(get_vector_store),
+) -> EmbeddingService:
+    return EmbeddingService(
+        EmbeddingRepository(session),
+        ChunkRepository(session),
+        embedder,
+        store,
+    )
+
+
+def get_search_service(
+    session: AsyncSession = Depends(get_session),
+    embedder: Embedder = Depends(get_embedder),
+    store: VectorStore = Depends(get_vector_store),
+    graph_store: GraphStore = Depends(get_graph_store),
+) -> SearchService:
+    return SearchService(
+        embedder,
+        store,
+        ChunkRepository(session),
+        graph_store,
+    )
+
+
+def get_trust_repo(session: AsyncSession = Depends(get_session)) -> TrustRepository:
+    return TrustRepository(session)
+
+
+def get_trust_service(
+    session: AsyncSession = Depends(get_session),
+    graph_store: GraphStore = Depends(get_graph_store),
+) -> TrustService:
+    """Trust scoring over documents + processing/embedding state + the graph (Phase 5)."""
+    return TrustService(
+        TrustRepository(session),
+        ChunkRepository(session),
+        graph_store,
     )

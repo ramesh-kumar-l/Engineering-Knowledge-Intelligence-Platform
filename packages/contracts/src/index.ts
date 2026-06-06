@@ -11,3 +11,7 @@ export type * from "./sync";
 export type * from "./documents";
 export type * from "./processing";
 export type * from "./chunks";
+export type * from "./graph";
+export type * from "./embedding";
+export type * from "./search";
+export type * from "./trust";

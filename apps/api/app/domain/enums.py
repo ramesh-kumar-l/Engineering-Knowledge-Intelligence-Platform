@@ -95,3 +95,20 @@ class GraphSource(StrEnum):
 
     PROJECTION = "projection"  # deterministically derived from ingested data
     MANUAL = "manual"  # curated by an editor via the API
+
+
+class ConfidenceBand(StrEnum):
+    """Coarse trust band for a confidence score (Phase 5, trust_framework.md)."""
+
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+
+
+class FreshnessBand(StrEnum):
+    """How current a document's underlying knowledge is (Phase 5)."""
+
+    FRESH = "fresh"  # recently updated at the source
+    RECENT = "recent"
+    AGING = "aging"
+    STALE = "stale"  # old or unknown last-updated time

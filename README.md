@@ -24,9 +24,9 @@ It is designed to eventually answer, with visible trust:
 
 | | |
 |---|---|
-| **Current phase** | Phase 2 — Knowledge Processing Layer (complete, at phase gate) |
-| **Delivered** | Phases 0–1 **and** Phase 2 processing: parse/chunk/classify/enrich/summarize pipeline, chunks + enrichment, processing APIs + UI |
-| **Next phase** | Phase 3 — Knowledge Graph Layer (awaiting gate approval) |
+| **Current phase** | Phase 5 — Trust Layer (complete, at phase gate) |
+| **Delivered** | Phases 0–4 **and** Phase 5 trust: deterministic, read-time confidence/freshness scoring + graph-attributed ownership + source attribution, trust APIs + Trust Inspector / Source Explorer / Freshness Dashboard UI |
+| **Next phase** | Phase 6 — Engineering Assistant (awaiting gate approval) |
 
 The authoritative, always-current status lives in
 [`.project-memory-bank/implementation_status.md`](.project-memory-bank/implementation_status.md).
@@ -58,9 +58,11 @@ truth. Before any work, read in order:
 .
 ├── apps/
 │   ├── api/                 # FastAPI backend (health, connectors, sync, documents,
-│   │                        #   processing; models/repositories/connectors/processing/
-│   │                        #   services; JWT + audit)
-│   └── web/                 # Next.js frontend (Overview + Connectors/Sync/Processing UI)
+│   │                        #   processing, graph, embeddings, search, trust; models/
+│   │                        #   repositories/processing/graph/retrieval/trust/services;
+│   │                        #   PG + Neo4j + Qdrant; JWT + audit)
+│   └── web/                 # Next.js frontend (Overview + Connectors/Sync/Processing/
+│                            #   Knowledge Graph/Search/Trust UI)
 ├── packages/
 │   └── contracts/           # Shared TS API contract types (mirror Pydantic schemas)
 ├── infra/                   # docker-compose: PostgreSQL + Neo4j + Qdrant

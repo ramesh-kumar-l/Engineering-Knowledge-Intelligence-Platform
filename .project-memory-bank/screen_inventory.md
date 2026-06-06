@@ -16,16 +16,19 @@ Design language: [`ui_design_system.md`](ui_design_system.md).
 | Chunk Statistics | 2 | (ops) | ✅ |
 | Parsing Explorer | 2 | (ops) | ✅ |
 | Processing Jobs | 2 | (ops) | ✅ |
-| Knowledge Explorer | 3 | J1, J3, J6 | ⬜ |
-| Service Explorer | 3 | J1, J2 | ⬜ |
-| Team Explorer | 3 | J2, J6 | ⬜ |
-| Dependency Graph | 3 | J3, J5 | ⬜ |
-| Global Search | 4 | J1, J2 | ⬜ |
-| Advanced Search | 4 | J1, J2 | ⬜ |
-| Search Explorer | 4 | J1 | ⬜ |
-| Trust Inspector | 5 | J1, J4 (cross-cutting) | ⬜ |
-| Source Explorer | 5 | J4 | ⬜ |
-| Freshness Dashboard | 5 | J5 | ⬜ |
+| Knowledge Explorer | 3 | J1, J3, J6 | ✅ |
+| Entity Detail (neighborhood) | 3 | J1, J3 | ✅ |
+| Service Explorer | 3 | J1, J2 | ✅ |
+| Team Explorer | 3 | J2, J6 | ✅ |
+| Dependency Graph | 3 | J3, J5 | ✅ |
+| Graph Build Jobs | 3 | (ops) | ✅ |
+| Global Search | 4 | J1, J2 | ✅ |
+| Advanced Search | 4 | J1, J2 | ✅ |
+| Search Explorer | 4 | J1 | ✅ |
+| Embedding Jobs | 4 | (ops) | ✅ |
+| Trust Inspector | 5 | J1, J4 (cross-cutting) | ✅ |
+| Source Explorer | 5 | J4 | ✅ |
+| Freshness Dashboard | 5 | J5 | ✅ |
 | Assistant Workspace | 6 | J1, J2, J3, J4, J6 | ⬜ |
 | Conversation History | 6 | (assistant support) | ⬜ |
 | Evidence Viewer | 6 | J3, J4 | ⬜ |

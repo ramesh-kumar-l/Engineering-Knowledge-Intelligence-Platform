@@ -8,51 +8,60 @@
 
 ## Where we are
 
-Phase 2 — Knowledge Processing is **complete and verified**, sitting at the **phase
-gate** awaiting approval to start Phase 3. End-to-end runs: UI → API (JWT/RBAC,
-tenant-scoped) → SyncService → documents → ProcessingService → chunks + enrichment.
+Phase 5 — Trust is **complete and verified**, sitting at the **phase gate** awaiting
+approval to start Phase 6. End-to-end runs: UI → API (JWT/RBAC, tenant-scoped) → Sync →
+documents → Processing → chunks/enrichment → Graph build (Neo4j) and Embedding (Qdrant)
+→ hybrid Search → **Trust** scoring (confidence/freshness/ownership/attribution computed
+on read over all three datastores).
 
 ## What just happened (this increment)
 
-Built the processing layer: deterministic pipeline (`app/processing/` — parser,
-chunker, classifier, enricher, summarizer, pipeline) over a `text` primitives module;
-models `ProcessingRun`/`ProcessingEvent`, 1:1 `DocumentEnrichment`, `Chunk`;
-repositories + `ProcessingService` (select pending/stale/failed → process → replace
-chunks + upsert enrichment); processing APIs (runs/events/stats/explorer); four
-processing screens; TS contracts. Added ADR-0010 (deterministic pluggable pipeline)
-and ADR-0011 (chunks in PG, embeddings deferred to Retrieval).
+Built the trust layer: pure deterministic scoring (`app/trust/scoring.py` — freshness
+decay + band, five-signal weighted confidence with a per-signal breakdown, bands;
+ADR-0017); trust primitives (`app/trust/base.py`); a `TrustRepository` joining document +
+enrichment + embedding state in one query; a `TrustService` (`profile`, `sources`,
+`freshness`) that attributes ownership from the graph's `modified` edges (ADR-0018);
+read-only trust APIs (`routes/trust.py`); three screens (Trust Inspector, Source
+Explorer, Freshness Dashboard); TS contracts (`trust.ts`). Added ADR-0017/0018. **No new
+datastore and no new persistence** — trust is computed on read.
 
-Gates: API `ruff` clean · `mypy app` clean (69 files) · `pytest` 50/50. Web
-`lint` · `typecheck` · `build` all green (routes incl. /processing,
-/processing/jobs/[runId], /processing/chunks, /processing/explorer{,/[id]}).
+Gates: API `ruff` clean · `mypy app` clean (103 files) · `pytest` **114/114**. Web
+`lint` · `typecheck` · `build` all green (routes incl. /trust, /trust/documents/[id],
+/trust/freshness).
 
 ## How to run it
 
 ```bash
 docker compose -f infra/docker-compose.yml up -d          # PG + Neo4j + Qdrant
-cd apps/api && uvicorn app.main:app --reload              # API on :8000 (auto-creates schema in dev)
+cd apps/api && uvicorn app.main:app --reload              # API on :8000 (auto-creates PG schema in dev)
 cd apps/web && npm run dev                                # Web on :3000
 ```
 
-Flow to exercise: add a GitHub connector → Run sync (ingests documents) → Processing →
-Run processing (parses/chunks/classifies/enriches/summarizes) → Chunk Statistics /
-Parsing Explorer. Dev auth: web client sends `X-Tenant-Id`/`X-Role` (editor) headers.
+Flow to exercise: add a GitHub connector → Run sync → Run processing → Build graph →
+Embed corpus → then **Trust → Source Explorer** (each doc's confidence/freshness/owner)
+→ open a document's **Trust Inspector** (why-this-score breakdown + provenance + owners +
+evidence) → **Freshness Dashboard** (corpus distribution + stale docs). Dev auth: web
+client sends `X-Tenant-Id`/`X-Role` headers.
 
 ## Active decisions / constraints to remember
 
-- Processing steps are deterministic and dependency-light (ADR-0010); each module is
-  the seam to swap in an LLM-backed step later. No external model providers yet.
-- Chunks are stored in PostgreSQL; embedding into Qdrant is owned by the Retrieval
-  phase (ADR-0011). Phases 1–2 are single-datastore (PostgreSQL).
-- Reprocessing is driven by `DocumentEnrichment.source_content_hash` vs the document's
-  `content_hash` (plus failed status); processing runs synchronously (ADR-0009).
-- `ProcessingRun`/`ProcessingEvent` reuse `SyncStatus`/`SyncEventLevel` (generic job
-  lifecycle / log levels).
+- Trust is **deterministic and computed on read** (ADR-0017) — nothing persisted, so a
+  profile always reflects current state; no run/trigger UI. Confidence = weighted blend
+  of freshness/ownership/processed/embedded/richness (fixed heuristic weights, tunable in
+  `scoring.py`); contributions sum to the score for the inspector.
+- **Ownership comes from the graph** (ADR-0018): engineers with a `modified` edge into a
+  `document:<id>` node. No edge ⇒ *ownership unknown* (never guessed). Needs a graph
+  build to populate.
+- Trust read model is a single join (`TrustRepository`: document + enrichment + embedding
+  state); outer joins keep unprocessed/unembedded docs visible at lower confidence.
+- Corpus-wide views recompute per request — a cached/materialized read model is the scale
+  upgrade behind the `TrustService` seam.
 - Keep files < 300 lines; one concern per file. Python schemas authoritative; TS
   `packages/contracts` mirror them.
 
 ## Next step (after gate approval)
 
-Phase 3 — Knowledge Graph Layer: model entities + relationships over processed
-documents, introduce Neo4j, deliver Knowledge/Service/Team Explorer + Dependency Graph.
-See [`roadmap.md`](roadmap.md) Phase 3.
+Phase 6 — Engineering Assistant: service understanding, ownership discovery, incident
+exploration, architecture explanations over retrieval + graph + trust; every answer
+carries trust (Phase 5 signals). Screens: Assistant Workspace, Conversation History,
+Evidence Viewer. See [`roadmap.md`](roadmap.md) Phase 6.

@@ -26,6 +26,13 @@ class QdrantStore:
             await self._client.close()
             self._client = None
 
+    @property
+    def client(self) -> AsyncQdrantClient:
+        """The connected client for the vector store (Phase 4). Raises if offline."""
+        if self._client is None:
+            raise RuntimeError("QdrantStore is not connected")
+        return self._client
+
     async def health_check(self) -> DataStoreStatus:
         if self._client is None:
             return DataStoreStatus(self.name, healthy=False, detail="not connected")
